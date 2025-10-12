@@ -1,0 +1,40 @@
+# 1) Минимальный одноузловой кластер в KRaft: 1 controller + 1 broker
+controller:
+  replicaCount: 1
+  controllerOnly: true
+
+broker:
+  replicaCount: 1
+
+# 2) Слушатели: клиентский/внутриброкерский/внешний — SASL_PLAINTEXT
+# (по умолчанию в чарте уже SASL_PLAINTEXT; оставляю явно для наглядности)
+listeners:
+  client:
+    protocol: SASL_PLAINTEXT
+  interbroker:
+    protocol: SASL_PLAINTEXT
+  external:
+    protocol: SASL_PLAINTEXT
+
+# 3) SASL: клиент — SCRAM-SHA-512; внутренние — PLAIN
+sasl:
+  enabledMechanisms: "SCRAM-SHA-512,PLAIN"
+  interBrokerMechanism: "PLAIN"
+  controllerMechanism: "PLAIN"
+  client:
+    users:
+      - "nikita"
+    # одно значение для одного пользователя (если пользователей несколько — пароли через запятую)
+    passwords: "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+
+# 4) Внешний доступ для клиента через NodePort на IP ноды k3s (192.168.0.200)
+externalAccess:
+  enabled: true
+  broker:
+    service:
+      type: NodePort
+      # адрес ноды, который клиент увидит в advertised.listeners
+      domain: "192.168.0.200"
+      # NodePort для единственного брокера (должно совпасть по длине с broker.replicaCount)
+      nodePorts:
+        - 30992
