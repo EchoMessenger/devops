@@ -1,0 +1,79 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.ctrl
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.data
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 3, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.pres
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 3, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.meta
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.info
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.topic-events
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.account-events
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.subscription-events
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.message-events
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 3, replicas: 1 }
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tinode.dlq
+  namespace: kafka
+  labels: { strimzi.io/cluster: kafka }
+spec: { partitions: 1, replicas: 1 }
