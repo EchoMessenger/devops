@@ -65,7 +65,7 @@ data:
    				// Disabled.
    				"enabled": false
    			}
-   		},
+   		}
    	],
 
      "media": {
@@ -78,7 +78,7 @@ data:
            "upload_dir": "uploads"
          }
        }
-     }
+     },
 
     "plugins": [
       {
