@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clickhouse
+  namespace: clickhouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      securityContext:
+        runAsUser: 101         # Запуск контейнера от имени пользователя с UID 1000
+        runAsGroup: 101        # Основная группа пользователя
+        fsGroup: 101
+      containers:
+      - name: clickhouse
+        image: clickhouse/clickhouse-server:latest
+        ports:
+        - containerPort: 9000
+          name: tcp
+        - containerPort: 8123
+          name: http
+        - containerPort: 9009
+          name: interserver
+        env:
+        - name: CLICKHOUSE_USER
+          value: "default"
+        - name: CLICKHOUSE_PASSWORD
+          value: "password"
+        - name: CLICKHOUSE_DB
+          value: "default"
+        volumeMounts:
+        - name: protobuf-schemas
+          mountPath: /var/lib/clickhouse/format_schemas/model.proto
+          subPath: model.proto
+      volumes:
+      - name: protobuf-schemas
+        configMap:
+          name: clickhouse-protobuf-schemas
+          items:
+          - key: model.proto
+            path: model.proto
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-service
+  namespace: clickhouse
+spec:
+  selector:
+    app: clickhouse
+  ports:
+  - name: http
+    port: 8123
+    targetPort: 8123
+    nodePort: 30123
+  - name: tcp
+    port: 9000
+    targetPort: 9000
+    nodePort: 30000
+  type: NodePort
