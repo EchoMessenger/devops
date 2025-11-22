@@ -54,26 +54,15 @@ spec:
   kafka:
     # Можно оставить без явных версий, Strimzi подставит совместимые по умолчанию.
     # Если хочешь закрепить:
-    # version: 4.1.0
-    # metadataVersion: 4.1-IV1
+    version: 4.1.0
+    replicas: 1
     listeners:
       - name: internal
         port: 9092
         type: internal
         tls: false
-      - name: external
-        port: 9094
-        type: nodeport
-        tls: false
         authentication:
           type: scram-sha-512
-        configuration:
-          bootstrap:
-            nodePort: 30992
-          brokers:
-            - broker: 0
-              nodePort: 30993
-          preferredNodePortAddressType: InternalIP
     config:
       # single-node значения репликаций
       default.replication.factor: 1
