@@ -1,0 +1,20 @@
+infisical:
+  # Prefer storing clientId/clientSecret in a kubernetes Secret and referencing it via
+  # values.infisical.credentialsSecretName. These fields are left empty by default.
+  clientId: ""
+  clientSecret: ""
+  credentialsSecretName: "infisical-credentials" # optional: Secret with clientId/clientSecret
+externalSecrets:
+  namespace: kafka
+  secrets:
+    - name: kafka-sasl
+      infisicalPath: "projects/myproj/envs/prod/kafka"
+      mappings:
+        - key: username
+          property: username
+        - key: password
+          property: password
+strimzi:
+  enabled: true
+  # If you want, override names for secrets (e.g. TLS keystores) that your Strimzi CR expects
+  secretNames: {}
