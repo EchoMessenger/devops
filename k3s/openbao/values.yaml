@@ -3,7 +3,7 @@ server:
 
   image:
     repository: openbao/openbao
-    tag: "2.0.0"   # фиксируй версию
+    tag: "2.0.0"
 
   dev:
     enabled: false
@@ -14,6 +14,16 @@ server:
   dataStorage:
     enabled: true
     size: 5Gi
+
+  podSecurityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    privileged: false
 
   standalone:
     enabled: true
@@ -38,11 +48,6 @@ server:
   serviceAccount:
     create: true
     name: vault
-
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 100
-    fsGroup: 1000
 
 ui:
   enabled: true
