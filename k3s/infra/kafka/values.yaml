@@ -1,20 +1,45 @@
 infisical:
-  # Prefer storing clientId/clientSecret in a kubernetes Secret and referencing it via
-  # values.infisical.credentialsSecretName. These fields are left empty by default.
-  clientId: ""
-  clientSecret: ""
-  credentialsSecretName: "infisical-credentials" # optional: Secret with clientId/clientSecret
-externalSecrets:
+  identityId: 15cd709a-c052-440d-9e68-9c4e860ddda9
+  project: echo-rvq-s
+  env: dev
+  serviceAccount:
+    name: infisical-service-account
+    namespace: default
+
+kafka:
+  name: kafka
   namespace: kafka
-  secrets:
-    - name: kafka-sasl
-      infisicalPath: "projects/myproj/envs/prod/kafka"
-      mappings:
-        - key: username
-          property: username
-        - key: password
-          property: password
-strimzi:
-  enabled: true
-  # If you want, override names for secrets (e.g. TLS keystores) that your Strimzi CR expects
-  secretNames: {}
+  version: 4.1.0
+  replicas: 1
+
+topics:
+  - name: tinode.ctrl
+    partitions: 1
+    replicas: 1
+  - name: tinode.data
+    partitions: 3
+    replicas: 1
+  - name: tinode.pres
+    partitions: 3
+    replicas: 1
+  - name: tinode.meta
+    partitions: 1
+    replicas: 1
+  - name: tinode.info
+    partitions: 1
+    replicas: 1
+  - name: tinode.topic_events
+    partitions: 1
+    replicas: 1
+  - name: tinode.account_events
+    partitions: 1
+    replicas: 1
+  - name: tinode.subscription_events
+    partitions: 1
+    replicas: 1
+  - name: tinode.message_events
+    partitions: 3
+    replicas: 1
+  - name: tinode.dlq
+    partitions: 1
+    replicas: 1

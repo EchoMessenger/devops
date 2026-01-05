@@ -1,0 +1,27 @@
+replicaCount: 1
+
+image:
+  repository: postgres
+  tag: "16"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5432
+
+storage:
+  size: 10Gi
+  storageClassName: local-path
+
+postgres:
+  name: postgres
+  namespace: tinode
+  dataDir: /var/lib/postgresql/data/pgdata
+
+infisical:
+  identityId: 15cd709a-c052-440d-9e68-9c4e860ddda9
+  project: echo-rvq-s
+  env: dev
+  serviceAccount:
+    name: infisical-service-account
+    namespace: default

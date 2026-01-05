@@ -1,0 +1,27 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/tinode-server
+  tag: latest-amd64
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 6060
+
+storage:
+  size: 5Gi
+  storageClassName: local-path
+
+postgres:
+  host: postgres
+  port: 5432
+  sslMode: disable
+
+infisical:
+  identityId: 15cd709a-c052-440d-9e68-9c4e860ddda9
+  project: echo-rvq-s
+  env: dev
+  serviceAccount:
+    name: infisical-service-account
+    namespace: default

@@ -1,8 +1,0 @@
-# This template will render the topics/users CRs provided in files/ (topics.yaml, user.yaml)
-{{- if .Files.Get "files/topics.yaml" }}
-{{ .Files.Get "files/topics.yaml" | indent 0 }}
-{{- end }}
-
-{{- if .Files.Get "files/user.yaml" }}
-{{ .Files.Get "files/user.yaml" | indent 0 }}
-{{- end }}

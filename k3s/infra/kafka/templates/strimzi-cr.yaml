@@ -1,5 +1,0 @@
-{{- if .Values.strimzi.enabled }}
-# This template will render the Strimzi CR provided in files/strimzi-kraft-nodepools.yaml
-# Place your Strimzi Kafka CR in files/strimzi-kraft-nodepools.yaml (see files/ section below).
-{{ .Files.Get "files/strimzi-kraft-nodepools.yaml" | indent 0 }}
-{{- end }}

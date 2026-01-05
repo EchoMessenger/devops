@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kafka-ui
+description: Kafka UI for Strimzi Kafka with SASL SCRAM auth
+type: application
+version: 0.1.0
+appVersion: "latest"
