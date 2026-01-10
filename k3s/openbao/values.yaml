@@ -15,9 +15,9 @@ server:
     enabled: true
     size: 5Gi
 
+  # Рекомендуется оставить включенным, если нет жестких ограничений окружения
   podSecurityContext:
     enabled: false
-
   securityContext:
     enabled: false
 
@@ -32,21 +32,27 @@ server:
       }
 
       storage "file" {
-        path = "/vault/data"
+        path = "/openbao/data" # В OpenBao стандартный путь может отличаться от Vault
       }
 
       disable_mlock = true
 
+  # ИСПРАВЛЕННЫЙ БЛОК SERVICE
   service:
-    type: ClusterIP
+    enabled: true
+    type: NodePort
     port: 8200
+    targetPort: 8200
+    nodePort: 30200
 
   serviceAccount:
     create: true
-    name: vault
+    name: openbao 
 
 ui:
   enabled: true
+  serviceType: NodePort 
+  serviceNodePort: 30201 
 
 injector:
   enabled: true
