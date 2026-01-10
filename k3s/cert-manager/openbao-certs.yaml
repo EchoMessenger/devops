@@ -2,7 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: openbao-selfsigned-issuer
-  namespace: openbao
+  namespace: openbao  # Совпадает с namespace OpenBao
 spec:
   selfSigned: {}
 ---
@@ -10,15 +10,18 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: openbao-server-tls
-  namespace: default
+  namespace: openbao  # Совпадает с namespace OpenBao
 spec:
-  secretName: openbao-server-tls # Это имя должно совпадать с extraVolumes в values
-  commonName: openbao.default.svc.cluster.local
+  secretName: openbao-server-tls
+  commonName: openbao.openbao.svc.cluster.local  # Обновлено на правильный DNS
   dnsNames:
   - openbao
-  - openbao.default
-  - openbao.default.svc.cluster.local
+  - openbao.openbao  # namespace.openbao
+  - openbao.openbao.svc
+  - openbao.openbao.svc.cluster.local
   - localhost
+  ipAddresses:
+  - 127.0.0.1
   issuerRef:
     name: openbao-selfsigned-issuer
     kind: Issuer
