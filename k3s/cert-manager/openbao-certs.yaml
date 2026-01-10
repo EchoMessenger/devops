@@ -22,7 +22,8 @@ spec:
   - localhost
   ipAddresses:
   - 127.0.0.1
-  - 10.129.0.24  # Добавьте IP вашей ноды
+  - 10.129.0.24
+  isCA: true  # Добавим это для самоподписанного сертификата
   issuerRef:
     name: openbao-selfsigned-issuer
     kind: Issuer
