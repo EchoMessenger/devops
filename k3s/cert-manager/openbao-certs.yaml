@@ -1,0 +1,24 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: openbao-selfsigned-issuer
+  namespace: openbao
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-server-tls
+  namespace: default
+spec:
+  secretName: openbao-server-tls # Это имя должно совпадать с extraVolumes в values
+  commonName: openbao.default.svc.cluster.local
+  dnsNames:
+  - openbao
+  - openbao.default
+  - openbao.default.svc.cluster.local
+  - localhost
+  issuerRef:
+    name: openbao-selfsigned-issuer
+    kind: Issuer
