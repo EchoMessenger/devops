@@ -1,6 +1,11 @@
 server:
   enabled: true
 
+  extraVolumes:
+    - type: secret
+      name: openbao-server-tls
+      path: /openbao/userconfig/openbao-server-tls
+
   image:
     repository: openbao/openbao
     tag: "2.0.0"
