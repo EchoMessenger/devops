@@ -1,10 +1,16 @@
 server:
   enabled: true
 
-  extraVolumes:
-    - type: secret
-      name: openbao-server-tls
-      path: /openbao/userconfig/openbao-server-tls
+  volumes:
+    - name: openbao-server-tls
+      secret:
+        secretName: openbao-server-tls
+        defaultMode: 420
+
+  volumeMounts:
+    - name: openbao-server-tls
+      mountPath: /openbao/userconfig/openbao-server-tls
+      readOnly: true
 
   image:
     repository: openbao/openbao
