@@ -13,8 +13,8 @@ server:
       readOnly: true
 
   extraEnvironmentVars:
-    BAO_ADDR: "https://127.0.0.1:8200"
-    BAO_API_ADDR: "https://$(POD_IP):8200"
+    BAO_ADDR: "http://127.0.0.1:8200"
+    BAO_API_ADDR: "http://$(POD_IP):8200"
 
   readinessProbe:
     enabled: true
@@ -22,7 +22,7 @@ server:
       command:
         - /bin/sh
         - -ec
-        - bao status -tls-skip-verify
+        - bao status --address=http://127.0.0.1:8200
 
   image:
     repository: openbao/openbao
@@ -38,7 +38,6 @@ server:
     enabled: true
     size: 5Gi
 
-  # Рекомендуется оставить включенным, если нет жестких ограничений окружения
   podSecurityContext:
     enabled: false
   securityContext:
