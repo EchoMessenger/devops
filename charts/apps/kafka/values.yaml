@@ -29,16 +29,16 @@ topics:
   - name: tinode.info
     partitions: 1
     replicas: 1
-  - name: tinode.topic_events
+  - name: tinode.topic-events
     partitions: 1
     replicas: 1
-  - name: tinode.account_events
+  - name: tinode.account-events
     partitions: 1
     replicas: 1
-  - name: tinode.subscription_events
+  - name: tinode.subscription-events
     partitions: 1
     replicas: 1
-  - name: tinode.message_events
+  - name: tinode.message-events
     partitions: 3
     replicas: 1
   - name: tinode.dlq
