@@ -50,9 +50,7 @@ server:
       ui = true
       listener "tcp" {
         address = "0.0.0.0:8200"
-        tls_cert_file = "/openbao/userconfig/openbao-server-tls/tls.crt"
-        tls_key_file  = "/openbao/userconfig/openbao-server-tls/tls.key"
-        tls_disable = 0
+        tls_disable = true
       }
       storage "file" {
         path = "/openbao/data"
