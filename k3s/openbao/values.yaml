@@ -12,6 +12,18 @@ server:
       mountPath: /openbao/userconfig/openbao-server-tls
       readOnly: true
 
+  extraEnvironmentVars:
+    BAO_ADDR: "https://127.0.0.1:8200"
+    BAO_API_ADDR: "https://$(POD_IP):8200"
+
+  readinessProbe:
+    enabled: true
+    exec:
+      command:
+        - /bin/sh
+        - -ec
+        - bao status -tls-skip-verify
+
   image:
     repository: openbao/openbao
     tag: "2.0.0"
@@ -36,36 +48,30 @@ server:
     enabled: true
     config: |
       ui = true
-
       listener "tcp" {
         address = "0.0.0.0:8200"
         tls_cert_file = "/openbao/userconfig/openbao-server-tls/tls.crt"
-        tls_key_file = "/openbao/userconfig/openbao-server-tls/tls.key"
+        tls_key_file  = "/openbao/userconfig/openbao-server-tls/tls.key"
         tls_disable = 0
       }
-
       storage "file" {
-        path = "/openbao/data" # В OpenBao стандартный путь может отличаться от Vault
+        path = "/openbao/data"
       }
-
       disable_mlock = true
 
-  # ИСПРАВЛЕННЫЙ БЛОК SERVICE
   service:
     enabled: true
-    type: NodePort
+    type: ClusterIP
     port: 8200
-    targetPort: 8200
-    nodePort: 30200
 
-  serviceAccount:
-    create: true
-    name: openbao 
+serviceAccount:
+  create: true
+  name: openbao 
 
 ui:
   enabled: true
-  serviceType: NodePort 
-  serviceNodePort: 30201 
+  serviceType: NodePort
+  serviceNodePort: 30201
 
 injector:
   enabled: true
