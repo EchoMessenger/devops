@@ -1,0 +1,54 @@
+=======================================================
+  OpenBao Configuration Deployed!
+=======================================================
+
+OpenBao Server: {{ include "openbao-config.serverAddr" . }}
+
+Configured Namespaces:
+{{- range $nsName, $nsConfig := .Values.namespaces }}
+{{- if $nsConfig.enabled }}
+  - {{ $nsName }}
+    ServiceAccounts: {{ range $sa := $nsConfig.serviceAccounts }}{{ $sa.name }} {{ end }}
+    Role: {{ $nsName }}
+{{- end }}
+{{- end }}
+
+To verify the installation:
+
+  # Check OpenBao status
+  kubectl exec -it -n {{ .Release.Namespace }} \
+    $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/name=openbao -o jsonpath='{.items[0].metadata.name}') \
+    -- bao status
+
+  # Check initialization job
+  kubectl logs -n {{ .Release.Namespace }} job/{{ include "openbao-config.fullname" . }}-init
+
+  # Check SecretStores
+  {{- range $nsName, $nsConfig := .Values.namespaces }}
+  {{- if $nsConfig.enabled }}
+  kubectl get secretstore -n {{ $nsName }}
+  {{- end }}
+  {{- end }}
+
+  # Test ExternalSecret (example for apps namespace)
+  cat <<EOF | kubectl apply -f -
+  apiVersion: external-secrets.io/v1
+  kind: ExternalSecret
+  metadata:
+    name: test-secret
+    namespace: apps
+  spec:
+    refreshInterval: 10s
+    secretStoreRef:
+      name: openbao-backend
+      kind: SecretStore
+    target:
+      name: test-secret
+    data:
+    - secretKey: api_key
+      remoteRef:
+        key: secret/apps/api
+        property: api_key
+  EOF
+
+=======================================================
