@@ -20,35 +20,11 @@ To verify the installation:
     $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/name=openbao -o jsonpath='{.items[0].metadata.name}') \
     -- bao status
 
-  # Check initialization job
-  kubectl logs -n {{ .Release.Namespace }} job/{{ include "openbao-config.fullname" . }}-init
-
-  # Check SecretStores
+  # Check SecretStores (can be InvalidProviderConfig as OpenBao is sealed)
   {{- range $nsName, $nsConfig := .Values.namespaces }}
   {{- if $nsConfig.enabled }}
   kubectl get secretstore -n {{ $nsName }}
   {{- end }}
   {{- end }}
-
-  # Test ExternalSecret (example for apps namespace)
-  cat <<EOF | kubectl apply -f -
-  apiVersion: external-secrets.io/v1
-  kind: ExternalSecret
-  metadata:
-    name: test-secret
-    namespace: apps
-  spec:
-    refreshInterval: 10s
-    secretStoreRef:
-      name: openbao-backend
-      kind: SecretStore
-    target:
-      name: test-secret
-    data:
-    - secretKey: api_key
-      remoteRef:
-        key: secret/apps/api
-        property: api_key
-  EOF
 
 =======================================================
