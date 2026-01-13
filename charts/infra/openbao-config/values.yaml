@@ -25,6 +25,9 @@ openbao:
     service:
       type: ClusterIP
 
+kubernetesAuth:
+  path: kubernetes
+
 secretsEngines:
   - path: secret
     type: kv-v2
