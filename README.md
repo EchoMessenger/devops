@@ -27,13 +27,24 @@ rm -f openbao-keys.json
 Создание секретов происходит вручную. Переменные среды необходимо заменить на реальные значения
 ```sh
 kubectl exec -n openbao openbao-0 -- sh -c "
-  bao login ${ROOT_TOKEN}
+  bao login s.TognBz5LGGV5lvDCcdmhJY8e
 
-  bao kv put secret/kafka/user password='${KAFKA_USER_PASSWORD}'
-  bao kv put secret/kafka/sasl ENABLE='${KAFKA_SASL_ENABLE}' MECHANISM='${KAFKA_SASL_MECHANISM}'
-  bao kv put secret/kafka/tls ENABLE='${KAFKA_TLS_ENABLE}' INSECURE_SKIP_VERIFY='${KAFKA_TLS_INSECURE_SKIP_VERIFY}'
+  bao kv put secret/kafka/user password='I/O0lbOoar3uHwuG8BZZettCOV92qMxCAMTCeaauzpc='
+  bao kv put secret/kafka/sasl ENABLE='ture' MECHANISM='SCRAM-SHA-512'
+  bao kv put secret/kafka/tls ENABLE='true' INSECURE_SKIP_VERIFY='false'
 
   bao kv list secret/kafka
 "
 ```
+
+## Strimzi
+Управляет Kafka
+
+Установка:
+```sh
+helm install strimzi strimzi/strimzi-kafka-operator -n strimzi --set watchNamespaces="{kafka}
+```
+
+То есть ставится в namespace `strimzi` и следит за namespace `kafka`
+
 

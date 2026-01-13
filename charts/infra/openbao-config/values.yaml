@@ -12,6 +12,8 @@ dependencies:
     condition: openbao.enabled
 
 # OpenBao subchart configuration
+openbaoServerAddr: "http://openbao.openbao.svc.cluster.local:8200"
+
 openbao:
   enabled: true
   server:

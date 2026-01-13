@@ -25,7 +25,11 @@ Create a default fully qualified app name.
 OpenBao server address
 */}}
 {{- define "openbao-config.serverAddr" -}}
-http://{{ .Release.Name }}-openbao.{{ .Release.Namespace }}.svc.cluster.local:8200
+{{- if .Values.openbaoServerAddr }}
+{{- .Values.openbaoServerAddr }}
+{{- else }}
+http://openbao.openbao.svc.cluster.local:8200
+{{- end }}
 {{- end }}
 
 {{/*
