@@ -23,42 +23,42 @@ data:
     bao login "$BAO_TOKEN"
 
     echo "=== Enabling secrets engines ==="
-    {{- range .Values.secretsEngines }}
+{{- range .Values.secretsEngines }}
     bao secrets enable -path={{ .path }} {{ .type }} 2>/dev/null || echo "Secrets engine {{ .path }} already enabled"
-    {{- end }}
+{{- end }}
 
-    {{- if .Values.init.kubernetesAuth.enabled }}
+{{- if .Values.init.kubernetesAuth.enabled }}
     echo "=== Configuring Kubernetes auth ==="
     bao auth enable -path={{ .Values.init.kubernetesAuth.path }} kubernetes 2>/dev/null || echo "Kubernetes auth already enabled"
 
     bao write auth/{{ .Values.init.kubernetesAuth.path }}/config \
-        kubernetes_host="https://kubernetes.default.svc:443" \
-        kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-    {{- end }}
+      kubernetes_host="https://kubernetes.default.svc:443" \
+      kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+{{- end }}
 
     echo "=== Creating policies ==="
-    {{- range $nsName, $nsConfig := .Values.namespaces }}
-    {{- if $nsConfig.enabled }}
-    {{- range $policy := $nsConfig.policies }}
+{{- range $nsName, $nsConfig := .Values.namespaces }}
+{{- if $nsConfig.enabled }}
+{{- range $policy := $nsConfig.policies }}
     cat <<'POLICY_EOF' | bao policy write {{ $policy.name }} -
-    {{ $policy.rules }}
-    POLICY_EOF
-    {{- end }}
-    {{- end }}
-    {{- end }}
+{{ $policy.rules | indent 6 }}
+POLICY_EOF
+{{- end }}
+{{- end }}
+{{- end }}
 
     echo "=== Creating roles ==="
-    {{- range $nsName, $nsConfig := .Values.namespaces }}
-    {{- if $nsConfig.enabled }}
-    {{- range $role := $nsConfig.roles }}
+{{- range $nsName, $nsConfig := .Values.namespaces }}
+{{- if $nsConfig.enabled }}
+{{- range $role := $nsConfig.roles }}
     bao write auth/{{ $.Values.init.kubernetesAuth.path }}/role/{{ $role.name }} \
-        bound_service_account_names={{ $role.boundServiceAccountNames | join "," }} \
-        bound_service_account_namespaces={{ $role.boundServiceAccountNamespaces | join "," }} \
-        policies={{ $role.policies | join "," }} \
-        ttl={{ $role.ttl }}
-    {{- end }}
-    {{- end }}
-    {{- end }}
+      bound_service_account_names={{ join "," $role.boundServiceAccountNames }} \
+      bound_service_account_namespaces={{ join "," $role.boundServiceAccountNamespaces }} \
+      policies={{ join "," $role.policies }} \
+      ttl={{ $role.ttl }}
+{{- end }}
+{{- end }}
+{{- end }}
 
     echo "=== Verification ==="
     echo "Auth methods:"
