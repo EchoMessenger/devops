@@ -86,7 +86,7 @@ echo "=== OpenBao is unsealed ==="
 # Шаг 3: Конфигурация
 echo "=== Configuring OpenBao ==="
 
-kkubectl exec -n "${OPENBAO_NAMESPACE}" "${POD_NAME}" -- sh -c "
+kubectl exec -n "${OPENBAO_NAMESPACE}" "${POD_NAME}" -- sh -c "
   set -e
 
   export BAO_ADDR='http://127.0.0.1:8200'
