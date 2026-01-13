@@ -25,29 +25,10 @@ openbao:
     service:
       type: ClusterIP
 
-# Initialization configuration
-init:
-  enabled: true
-  image:
-    repository: openbao/openbao
-    tag: "2.0.0"
-    pullPolicy: IfNotPresent
-
-  # Root token (НЕ класть сюда в Git, задавать через --set init.rootToken=...)
-  rootToken: ""
-
-  # Kubernetes auth configuration
-  kubernetesAuth:
-    enabled: true
-    path: kubernetes
-
-# Secrets engine configuration
 secretsEngines:
   - path: secret
     type: kv-v2
-    description: "KV Version 2 secret engine"
 
-# Конфигурация для namespaces (без значений секретов)
 namespaces:
   kafka:
     enabled: true
@@ -66,18 +47,13 @@ namespaces:
           }
     roles:
       - name: kafka
-        boundServiceAccountNames:
-          - kafka-sa
-        boundServiceAccountNamespaces:
-          - kafka
-        policies:
-          - kafka-policy
+        boundServiceAccountNames: [kafka-sa]
+        boundServiceAccountNamespaces: [kafka]
+        policies: [kafka-policy]
         ttl: 1h
 
-# ServiceAccounts to create
 serviceAccounts:
   create: true
 
-# ClusterRoleBindings for auth-delegator
 authDelegator:
   create: true
