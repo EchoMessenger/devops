@@ -51,6 +51,7 @@ secretsEngines:
 namespaces:
   kafka:
     enabled: true
+    createNamespace: false
     serviceAccounts:
       - name: kafka-sa
         namespace: kafka
