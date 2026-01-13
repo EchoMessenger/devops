@@ -86,9 +86,11 @@ echo "=== OpenBao is unsealed ==="
 # Шаг 3: Конфигурация
 echo "=== Configuring OpenBao ==="
 
-kubectl exec -n "${OPENBAO_NAMESPACE}" "${POD_NAME}" -- sh -c "
+kkubectl exec -n "${OPENBAO_NAMESPACE}" "${POD_NAME}" -- sh -c "
+  set -e
+
   export BAO_ADDR='http://127.0.0.1:8200'
-  bao login ${ROOT_TOKEN}
+  export BAO_TOKEN='${ROOT_TOKEN}'
 
   # Enable KV v2
   bao secrets enable -path=secret kv-v2 2>/dev/null || echo 'KV v2 already enabled'
@@ -98,7 +100,7 @@ kubectl exec -n "${OPENBAO_NAMESPACE}" "${POD_NAME}" -- sh -c "
 
   # Configure Kubernetes auth
   bao write auth/kubernetes/config \
-    kubernetes_host=\"https://kubernetes.default.svc:443\" \
+    kubernetes_host='https://kubernetes.default.svc:443' \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
   # Create kafka policy
