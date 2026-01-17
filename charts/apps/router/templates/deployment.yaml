@@ -1,6 +1,6 @@
 envFrom:
   - configMapRef:
-      name: {{ include "tinode-router.fullname" . }}
+      name: {{ include "router.fullname" . }}
 
 env:
   # Kafka SASL
