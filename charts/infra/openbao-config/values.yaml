@@ -56,6 +56,29 @@ namespaces:
         boundServiceAccountNamespaces: [kafka]
         policies: [kafka-policy]
         ttl: 1h
+  router:
+    enabled: true
+    createNamespace: false
+    serviceAccounts:
+      - name: router-sa
+        namespace: router
+
+    policies:
+      - name: router-policy
+        rules: |
+          path "secret/data/kafka/*" {
+            capabilities = ["read"]
+          }
+          path "secret/metadata/kafka/*" {
+            capabilities = ["read"]
+          }
+    
+    roles:
+      - name: router
+        boundServiceAccountNames: [router-sa]
+        boundServiceAccountNamespaces: [router]
+        policies: [router-policy]
+        ttl: 1h
 
 serviceAccounts:
   create: true

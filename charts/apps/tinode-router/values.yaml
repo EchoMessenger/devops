@@ -1,0 +1,26 @@
+image:
+  repository: ghcr.io/echomessenger/tinode-router
+  tag: latest-amd64
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  port: 7911
+  healthPort: 8090
+
+kafka:
+  brokers: kafka-kafka-bootstrap:9092
+  clientId: router
+  topicPrefix: tinode
+
+log:
+  level: debug
+
+openbao:
+  enabled: true
+  path: "secret"
+  role: "router"
+  serviceAccount: "router-sa"
+  secretsPath: "secret/router"
+  resyncInterval: "10s"

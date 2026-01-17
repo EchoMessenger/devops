@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tinode-router.fullname" . }}
+data:
+  # NETWORK
+  LISTEN_ADDR: ":{{ .Values.service.port }}"
+  HEALTH_ADDR: ":{{ .Values.service.healthPort }}"
+
+  # KAFKA (non-secret)
+  KAFKA_BROKERS: {{ .Values.kafka.brokers | quote }}
+  KAFKA_CLIENT_ID: {{ .Values.kafka.clientId | quote }}
+  TOPIC_PREFIX: {{ .Values.kafka.topicPrefix | quote }}
+
+  # LOGGING
+  LOG_LEVEL: {{ .Values.log.level | quote }}

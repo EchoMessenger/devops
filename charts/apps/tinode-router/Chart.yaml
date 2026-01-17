@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tinode-router
+description: Consumer for Tinode events
+type: application
+version: 0.1.0
+appVersion: "latest"
