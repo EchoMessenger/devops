@@ -92,18 +92,18 @@ kubectl exec -n "${OPENBAO_NAMESPACE}" "${POD_NAME}" -- sh -c "
   export BAO_ADDR='http://127.0.0.1:8200'
   export BAO_TOKEN='${ROOT_TOKEN}'
 
-  # Enable KV v2
+  echo '--- Enable KV v2 (if needed)'
   bao secrets enable -path=secret kv-v2 2>/dev/null || echo 'KV v2 already enabled'
 
-  # Enable Kubernetes auth
+  echo '--- Enable Kubernetes auth (if needed)'
   bao auth enable kubernetes 2>/dev/null || echo 'Kubernetes auth already enabled'
 
-  # Configure Kubernetes auth
+  echo '--- Configure Kubernetes auth'
   bao write auth/kubernetes/config \
     kubernetes_host='https://kubernetes.default.svc:443' \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
-  # Create kafka policy
+  echo '--- Create kafka policy'
   bao policy write kafka-policy - <<'POLICYEOF'
 path \"secret/data/kafka/*\" {
   capabilities = [\"read\", \"list\"]
@@ -113,16 +113,38 @@ path \"secret/metadata/kafka/*\" {
 }
 POLICYEOF
 
-  # Create kafka role
+  echo '--- Create kafka role'
   bao write auth/kubernetes/role/kafka \
     bound_service_account_names=kafka-sa \
     bound_service_account_namespaces=kafka \
     policies=kafka-policy \
     ttl=1h
 
+  echo '--- Create router policy'
+  bao policy write router-policy - <<'POLICYEOF'
+path \"secret/data/kafka/*\" {
+  capabilities = [\"read\"]
+}
+path \"secret/metadata/kafka/*\" {
+  capabilities = [\"read\"]
+}
+POLICYEOF
+
+  echo '--- Create router role'
+  bao write auth/kubernetes/role/router \
+    bound_service_account_names=external-secrets \
+    bound_service_account_namespaces=external-secrets-system \
+    policies=router-policy \
+    ttl=1h
+
   echo '=== Verification ==='
+  echo 'Auth methods:'
   bao auth list
+
+  echo 'Policies:'
   bao policy list
+
+  echo 'Kubernetes roles:'
   bao list auth/kubernetes/role
 "
 
