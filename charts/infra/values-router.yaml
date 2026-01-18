@@ -1,0 +1,11 @@
+openbao:
+  server: "http://openbao.openbao.svc.cluster.local:8200"
+  path: "secret"
+  version: "v2"
+  authMountPath: "kubernetes"
+
+secretStores:
+  - name: openbao-backend
+    namespace: router
+    role: router
+    serviceAccount: router-sa
