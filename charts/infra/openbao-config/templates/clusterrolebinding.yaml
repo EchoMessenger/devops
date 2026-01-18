@@ -15,27 +15,3 @@ subjects:
 - kind: ServiceAccount
   name: {{ .Release.Name }}-openbao
   namespace: {{ .Release.Namespace }}
-
-# ServiceAccount bindings for each namespace
-{{- range $nsName, $nsConfig := .Values.namespaces }}
-{{- if $nsConfig.enabled }}
-{{- range $sa := $nsConfig.serviceAccounts }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ $sa.name }}-bao-auth
-  labels:
-    {{- include "openbao-config.labels" $ | nindent 4 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:auth-delegator
-subjects:
-- kind: ServiceAccount
-  name: {{ $sa.name }}
-  namespace: {{ $sa.namespace }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}

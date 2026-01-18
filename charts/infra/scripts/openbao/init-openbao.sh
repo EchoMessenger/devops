@@ -115,8 +115,8 @@ POLICYEOF
 
   echo '--- Create kafka role'
   bao write auth/kubernetes/role/kafka \
-    bound_service_account_names=kafka-sa \
-    bound_service_account_namespaces=kafka \
+    bound_service_account_names=external-secrets \
+    bound_service_account_namespaces=external-secrets-system \
     policies=kafka-policy \
     ttl=1h
 
