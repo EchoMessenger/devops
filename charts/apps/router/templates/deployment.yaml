@@ -1,43 +1,64 @@
-envFrom:
-  - configMapRef:
-      name: {{ include "router.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "router.fullname" . }}
+  labels:
+    app: router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: router
+  template:
+    metadata:
+      labels:
+        app: router
+    spec:
+      containers:
+        - name: router
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
 
-env:
-  # Kafka SASL
-  - name: KAFKA_SASL_ENABLE
-    valueFrom:
-      secretKeyRef:
-        name: kafka-sasl
-        key: ENABLE
+          envFrom:
+            - configMapRef:
+                name: {{ include "router.fullname" . }}
 
-  - name: KAFKA_SASL_MECHANISM
-    valueFrom:
-      secretKeyRef:
-        name: kafka-sasl
-        key: MECHANISM
+          env:
+            # Kafka SASL
+            - name: KAFKA_SASL_ENABLE
+              valueFrom:
+                secretKeyRef:
+                  name: router-kafka-sasl
+                  key: ENABLE
 
-  - name: KAFKA_SASL_USERNAME
-    valueFrom:
-      secretKeyRef:
-        name: kafka-user
-        key: username
-        optional: true
+            - name: KAFKA_SASL_MECHANISM
+              valueFrom:
+                secretKeyRef:
+                  name: router-kafka-sasl
+                  key: MECHANISM
 
-  - name: KAFKA_SASL_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: kafka-user
-        key: password
+            - name: KAFKA_SASL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: router-kafka-user
+                  key: username
+                  optional: true
 
-  # Kafka TLS
-  - name: KAFKA_TLS_ENABLE
-    valueFrom:
-      secretKeyRef:
-        name: kafka-tls
-        key: ENABLE
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: router-kafka-user
+                  key: password
 
-  - name: KAFKA_TLS_INSECURE_SKIP_VERIFY
-    valueFrom:
-      secretKeyRef:
-        name: kafka-tls
-        key: INSECURE_SKIP_VERIFY
+            # Kafka TLS
+            - name: KAFKA_TLS_ENABLE
+              valueFrom:
+                secretKeyRef:
+                  name: router-kafka-tls
+                  key: ENABLE
+
+            - name: KAFKA_TLS_INSECURE_SKIP_VERIFY
+              valueFrom:
+                secretKeyRef:
+                  name: router-kafka-tls
+                  key: INSECURE_SKIP_VERIFY
