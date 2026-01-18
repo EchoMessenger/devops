@@ -5,7 +5,7 @@ openbao:
   authMountPath: "kubernetes"
 
 secretStores:
-  - name: openbao-kafka
+  - name: kafka
     namespace: kafka
     role: kafka
     serviceAccount: kafka-sa

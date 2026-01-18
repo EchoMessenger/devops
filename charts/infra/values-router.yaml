@@ -5,7 +5,7 @@ openbao:
   authMountPath: "kubernetes"
 
 secretStores:
-  - name: openbao-router
+  - name: router
     namespace: router
     role: router
     serviceAccount: router-sa
