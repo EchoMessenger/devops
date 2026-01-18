@@ -1,0 +1,16 @@
+openbao:
+  enabled: true
+  server: "http://openbao.openbao.svc.cluster.local:8200"
+  path: "secret"
+  version: "v2"
+  kubernetesAuthMount: "kubernetes"
+  caBundle: ""
+
+secretStores:
+  - name: router
+    role: router
+    serviceAccount: router-sa
+
+  - name: kafka
+    role: kafka
+    serviceAccount: kafka-sa
