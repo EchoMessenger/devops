@@ -4,6 +4,7 @@ openbao:
   path: "secret"
   version: "v2"
   kubernetesAuthMount: "kubernetes"
+  role: "eso"
   caBundle: ""
 
 clusterSecretStore:
