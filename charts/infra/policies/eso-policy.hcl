@@ -1,4 +1,3 @@
-/ $ bao policy read eso-policy
 # ghcr
 path "secret/data/registry/ghcr/*" {
   capabilities = ["read"]
