@@ -137,6 +137,24 @@ POLICYEOF
     policies=router-policy \
     ttl=1h
 
+  echo '--- Create ghcr policy'
+  bao policy write ghcr-read - <<'EOF'
+path "secret/data/registry/ghcr" {
+  capabilities = ["read"]
+}
+
+path "secret/metadata/registry/ghcr" {
+  capabilities = ["read"]
+}
+EOF
+
+  echo '--- Create ghcr role'
+  bao write auth/kubernetes/role/ghcr \
+    bound_service_account_names=external-secrets \
+    bound_service_account_namespaces=external-secrets-system \
+    policies=ghcr-read \
+    ttl=24h
+
   echo '=== Verification ==='
   echo 'Auth methods:'
   bao auth list

@@ -14,6 +14,8 @@ spec:
       labels:
         app: router
     spec:
+      imagePullSecrets:
+          - name: ghcr-secret
       containers:
         - name: router
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}

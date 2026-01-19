@@ -6,11 +6,5 @@ openbao:
   kubernetesAuthMount: "kubernetes"
   caBundle: ""
 
-secretStores:
-  - name: router
-    role: router
-    serviceAccount: router-sa
-
-  - name: kafka
-    role: kafka
-    serviceAccount: kafka-sa
+clusterSecretStore:
+  name: openbao
