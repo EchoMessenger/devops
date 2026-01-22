@@ -72,11 +72,11 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /v1/sys/health
+              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
               port: 8200
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            failureThreshold: 6
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
 
           livenessProbe:
             httpGet:
