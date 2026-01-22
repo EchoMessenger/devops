@@ -166,8 +166,11 @@ READONLYPOLICY
 
               # Policy: app-default
               echo "Creating app-default policy..."
-              cat > /tmp/app-default-policy.hcl <<"APPPOLICY"
-path "secret/data/{{identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace}}/*" {
+              # Construct the policy by concatenating strings to avoid Helm seeing {{ as template start
+              LBRACE='{'
+              RBRACE='}'
+              cat > /tmp/app-default-policy.hcl <<APPPOLICY
+path "secret/data/${LBRACE}${LBRACE}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace${RBRACE}${RBRACE}/*" {
   capabilities = ["read", "list"]
 }
 path "secret/data/shared/*" {
