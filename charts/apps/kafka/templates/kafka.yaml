@@ -6,7 +6,6 @@ metadata:
 spec:
   kafka:
     version: {{ .Values.kafka.version }}
-    replicas: {{ .Values.kafka.replicas }}
     listeners:
       - name: internal
         port: 9092
