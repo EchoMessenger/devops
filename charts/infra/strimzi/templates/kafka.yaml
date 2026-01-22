@@ -21,4 +21,4 @@ spec:
       min.insync.replicas: 1
   entityOperator:
     topicOperator: {}
-    uuserOperator: {}
+    userOperator: {}
