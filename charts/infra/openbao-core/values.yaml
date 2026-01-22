@@ -46,3 +46,13 @@ config:
   
   # Sample data
   createDemoSecret: false
+
+authDelegator:
+  enabled: true
+
+openbao:
+  enabled: true
+  server: http://openbao:8200
+  path: secret
+  version: v2
+  kubernetesAuthMount: kubernetes

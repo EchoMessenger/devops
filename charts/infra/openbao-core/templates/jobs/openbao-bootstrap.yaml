@@ -142,29 +142,6 @@ spec:
               echo ""
               echo "=== Creating Kubernetes Auth Roles ==="
 
-              # Role: default
-              echo "Creating default role..."
-              DEFAULT_ROLE=$(jq -n '{
-                bound_service_account_names: ["*"],
-                bound_service_account_namespaces: ["default", "apps", "staging", "production"],
-                policies: ["app-default"],
-                ttl: "1h",
-                max_ttl: "24h"
-              }')
-
-              RESULT=$(curl -s -X POST \
-                -H "X-Vault-Token: $ROOT_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$DEFAULT_ROLE" \
-                $BAO_ADDR/v1/auth/kubernetes/role/default)
-
-              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
-                echo "ERROR: Default role creation failed!"
-                echo "$RESULT" | jq .
-                exit 1
-              fi
-              echo "Default role created"
-
               # Role: admin
               echo "Creating admin role..."
               ADMIN_ROLE=$(jq -n '{
@@ -188,6 +165,30 @@ spec:
               fi
               echo "Admin role created"
 
+              echo "Creating ESO role..."
+
+              ESO_ROLE=$(jq -n '{
+                bound_service_account_names: ["external-secrets"],
+                bound_service_account_namespaces: ["external-secrets"],
+                policies: ["eso"],
+                ttl: "15m",
+                max_ttl: "1h"
+              }')
+
+              RESULT=$(curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$ESO_ROLE" \
+                $BAO_ADDR/v1/auth/kubernetes/role/eso)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: ESO role creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+
+              echo "ESO role created"
+
               # ============================================
               # 8. Verify Setup
               # ============================================
@@ -200,7 +201,7 @@ spec:
 
               echo ""
               echo "Policies:"
-              for policy in admin readonly app-default; do
+              for policy in admin readonly eso; do
                 POLICY_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/policies/acl/$policy)
                 # Check if response doesn't contain errors (policies return {rules: "..."} or {policy: "..."})
                 if ! echo "$POLICY_CHECK" | jq -e '.errors' >/dev/null 2>&1; then
