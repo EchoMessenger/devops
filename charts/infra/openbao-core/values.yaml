@@ -22,5 +22,27 @@ storage:
 resources: {}
 
 config:
+  enabled: true
   disable_mlock: true
   ui: true
+  
+  # Secrets engines to enable
+  secretsEngines:
+    kv:
+      enabled: true
+      paths:
+        - secret
+        - apps
+    
+    transit:
+      enabled: true
+      createDefaultKey: true
+    
+  # Audit logging
+  audit:
+    enabled: true
+    type: file
+    path: /vault/audit/audit.log
+  
+  # Sample data
+  createDemoSecret: false

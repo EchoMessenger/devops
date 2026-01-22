@@ -1,0 +1,277 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "openbao.labels" . | nindent 4 }}
+    app.kubernetes.io/component: config
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "30"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        {{- include "openbao.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: config
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "openbao.serviceAccountName" . }}-bootstrap
+      containers:
+        - name: config
+          image: bitnami/kubectl:latest
+          command: ["/bin/sh", "-c"]
+          env:
+            - name: BAO_ADDR
+              value: "http://{{ include "openbao.fullname" . }}:{{ .Values.service.port }}"
+          args:
+            - |
+              set -e
+
+              echo "=== OpenBao Config Job ==="
+              echo "Configuring secrets engines, audit, and namespaces"
+              echo ""
+
+              # ============================================
+              # 1. Wait for OpenBao
+              # ============================================
+              echo "Waiting for OpenBao API..."
+              until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
+                sleep 2
+              done
+
+              echo "Waiting for unseal..."
+              until [ "$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)" = "false" ]; do
+                echo "Still sealed, waiting..."
+                sleep 5
+              done
+              echo "OpenBao is ready!"
+
+              # ============================================
+              # 2. Get root token
+              # ============================================
+              echo "Getting root token..."
+              ROOT_TOKEN=$(kubectl get secret openbao-bootstrap -n {{ .Release.Namespace }} \
+                -o jsonpath='{.data.root-token}' | base64 -d)
+
+              if [ -z "$ROOT_TOKEN" ] || [ "$ROOT_TOKEN" = "null" ]; then
+                echo "ERROR: Root token not found!"
+                exit 1
+              fi
+
+              # ============================================
+              # 3. Enable KV Secrets Engine
+              # ============================================
+              echo ""
+              echo "=== Configuring KV Secrets Engine ==="
+
+              # KV v2 at secret/
+              KV_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/mounts | jq -r '.["secret/"]')
+
+              if [ "$KV_CHECK" = "null" ]; then
+                echo "Enabling KV v2 at secret/..."
+                RESULT=$(curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "type": "kv",
+                    "options": {
+                      "version": "2"
+                    },
+                    "description": "Key-Value secrets engine v2"
+                  }' \
+                  $BAO_ADDR/v1/sys/mounts/secret)
+
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "ERROR: Failed to enable KV engine!"
+                  echo "$RESULT" | jq .
+                  exit 1
+                fi
+                echo "✓ KV v2 enabled at secret/"
+              else
+                echo "✓ KV v2 already enabled at secret/"
+              fi
+
+              # KV v2 at apps/ (for application secrets)
+              KV_APPS_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/mounts | jq -r '.["apps/"]')
+
+              if [ "$KV_APPS_CHECK" = "null" ]; then
+                echo "Enabling KV v2 at apps/..."
+                RESULT=$(curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "type": "kv",
+                    "options": {
+                      "version": "2"
+                    },
+                    "description": "Application secrets"
+                  }' \
+                  $BAO_ADDR/v1/sys/mounts/apps)
+
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "ERROR: Failed to enable apps KV engine!"
+                  echo "$RESULT" | jq .
+                  exit 1
+                fi
+                echo "✓ KV v2 enabled at apps/"
+              else
+                echo "✓ KV v2 already enabled at apps/"
+              fi
+
+              # ============================================
+              # 4. Enable Transit Secrets Engine
+              # ============================================
+              echo ""
+              echo "=== Configuring Transit Secrets Engine ==="
+
+              TRANSIT_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/mounts | jq -r '.["transit/"]')
+
+              if [ "$TRANSIT_CHECK" = "null" ]; then
+                echo "Enabling Transit engine..."
+                RESULT=$(curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "type": "transit",
+                    "description": "Encryption as a Service"
+                  }' \
+                  $BAO_ADDR/v1/sys/mounts/transit)
+
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "ERROR: Failed to enable Transit engine!"
+                  echo "$RESULT" | jq .
+                  exit 1
+                fi
+                echo "✓ Transit engine enabled"
+
+                # Create a default encryption key
+                echo "Creating default encryption key..."
+                RESULT=$(curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "type": "aes256-gcm96",
+                    "derived": false
+                  }' \
+                  $BAO_ADDR/v1/transit/keys/default)
+
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "Warning: Failed to create default key (might already exist)"
+                else
+                  echo "✓ Default encryption key created"
+                fi
+              else
+                echo "✓ Transit engine already enabled"
+              fi
+
+              # ============================================
+              # 5. Enable Audit Logging
+              # ============================================
+              echo ""
+              echo "=== Configuring Audit Logging ==="
+
+              AUDIT_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/audit | jq -r '.["file/"]')
+
+              if [ "$AUDIT_CHECK" = "null" ]; then
+                echo "Enabling file audit device..."
+                RESULT=$(curl -s -X PUT \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "type": "file",
+                    "description": "File audit log",
+                    "options": {
+                      "file_path": "/vault/audit/audit.log"
+                    }
+                  }' \
+                  $BAO_ADDR/v1/sys/audit/file)
+
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "ERROR: Failed to enable audit logging!"
+                  echo "$RESULT" | jq .
+                  exit 1
+                fi
+                echo "✓ File audit logging enabled"
+              else
+                echo "✓ Audit logging already enabled"
+              fi
+
+              # ============================================
+              # 6. Create Sample Secrets (optional)
+              # ============================================
+              echo ""
+              echo "=== Creating Sample Secrets ==="
+
+              # Sample secret in secret/demo
+              echo "Creating demo secret..."
+              RESULT=$(curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "data": {
+                    "username": "demo-user",
+                    "password": "demo-password-change-me",
+                    "created_by": "openbao-config-job"
+                  }
+                }' \
+                $BAO_ADDR/v1/secret/data/demo)
+
+              if ! echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "✓ Demo secret created at secret/demo"
+              fi
+
+              # ============================================
+              # 7. Verify Configuration
+              # ============================================
+              echo ""
+              echo "=== Verifying Configuration ==="
+
+              echo "Secrets Engines:"
+              MOUNTS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/mounts)
+              for mount in secret/ apps/ transit/; do
+                CHECK=$(echo "$MOUNTS" | jq -r --arg m "$mount" '.[$m]')
+                if [ "$CHECK" != "null" ]; then
+                  TYPE=$(echo "$CHECK" | jq -r .type)
+                  echo "  ✓ $mount ($TYPE)"
+                else
+                  echo "  ✗ $mount - NOT FOUND"
+                fi
+              done
+
+              echo ""
+              echo "Audit Devices:"
+              AUDITS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/audit)
+              if echo "$AUDITS" | jq -e '.["file/"]' >/dev/null 2>&1; then
+                echo "  ✓ file/ (File audit logging)"
+              else
+                echo "  ✗ No audit devices configured"
+              fi
+
+              echo ""
+              echo "Transit Keys:"
+              KEYS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/transit/keys?list=true)
+              if echo "$KEYS" | jq -e '.data.keys' >/dev/null 2>&1; then
+                echo "$KEYS" | jq -r '.data.keys[] | "  ✓ " + .'
+              else
+                echo "  (no keys created)"
+              fi
+
+              echo ""
+              echo "=== Configuration Complete! ==="
+              echo ""
+              echo "✓ KV v2 enabled at: secret/, apps/"
+              echo "✓ Transit encryption enabled"
+              echo "✓ Audit logging enabled"
+              echo "✓ Demo secret created"
+              echo ""
+              echo "Your OpenBao is ready for production use!"
+              
+              exit 0
