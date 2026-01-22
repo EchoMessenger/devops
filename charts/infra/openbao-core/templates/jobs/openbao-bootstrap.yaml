@@ -166,17 +166,15 @@ READONLYPOLICY
 
               # Policy: app-default
               echo "Creating app-default policy..."
-              # Construct the policy by concatenating strings to avoid Helm seeing {{ as template start
-              LBRACE='{'
-              RBRACE='}'
-              cat > /tmp/app-default-policy.hcl <<APPPOLICY
-path "secret/data/${LBRACE}${LBRACE}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace${RBRACE}${RBRACE}/*" {
-  capabilities = ["read", "list"]
-}
-path "secret/data/shared/*" {
-  capabilities = ["read", "list"]
-}
-APPPOLICY
+              # Build the policy using echo to avoid Helm template parsing issues
+              echo 'path "secret/data/' > /tmp/app-default-policy.hcl
+              printf '%s%s' '{{' 'identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace' >> /tmp/app-default-policy.hcl
+              echo '}}/*" {' >> /tmp/app-default-policy.hcl
+              echo '  capabilities = ["read", "list"]' >> /tmp/app-default-policy.hcl
+              echo '}' >> /tmp/app-default-policy.hcl
+              echo 'path "secret/data/shared/*" {' >> /tmp/app-default-policy.hcl
+              echo '  capabilities = ["read", "list"]' >> /tmp/app-default-policy.hcl
+              echo '}' >> /tmp/app-default-policy.hcl
 
               APP_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/app-default-policy.hcl)" '{policy: $policy}')
 
