@@ -1,0 +1,113 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-unseal
+  namespace: openbao
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: unseal
+          image: bitnami/kubectl:latest
+          command: ["/bin/sh", "-c"]
+          env:
+            - name: BAO_ADDR
+              value: "http://openbao:8200"
+          args:
+            - |
+              set -e
+
+              echo "=== OpenBao Unseal Job ==="
+
+              # 1. Ждём API
+              echo "Waiting for OpenBao API..."
+              until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
+                sleep 2
+              done
+
+              # 2. Проверяем seal status
+              echo "Checking seal status..."
+              SEAL_STATUS=$(curl -s $BAO_ADDR/v1/sys/seal-status)
+              echo "$SEAL_STATUS" | jq .
+
+              SEALED=$(echo "$SEAL_STATUS" | jq -r .sealed)
+              INITIALIZED=$(echo "$SEAL_STATUS" | jq -r .initialized)
+
+              # Если не инициализирован - ждём init job
+              if [ "$INITIALIZED" = "false" ]; then
+                echo "Not initialized yet, waiting for init job..."
+                until [ "$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .initialized)" = "true" ]; do
+                  sleep 5
+                done
+                SEALED=$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)
+              fi
+
+              # Уже unsealed
+              if [ "$SEALED" = "false" ]; then
+                echo "Already unsealed!"
+                exit 0
+              fi
+
+              # 3. Ждём unseal keys в секрете
+              echo "Waiting for unseal keys in secret..."
+              MAX_WAIT=120
+              WAITED=0
+              while true; do
+                K1=$(kubectl get secret openbao-bootstrap -n openbao \
+                  -o jsonpath='{.data.unseal-key-1}' 2>/dev/null | base64 -d || echo "")
+                
+                # Проверяем что ключ не пустой и не "null"
+                if [ -n "$K1" ] && [ "$K1" != "" ] && [ "$K1" != "null" ]; then
+                  echo "Keys found!"
+                  break
+                fi
+                
+                WAITED=$((WAITED + 5))
+                if [ $WAITED -ge $MAX_WAIT ]; then
+                  echo "Timeout waiting for keys!"
+                  exit 1
+                fi
+                
+                echo "Keys not ready, waiting... ($WAITED/$MAX_WAIT sec)"
+                sleep 5
+              done
+
+              # 4. Читаем ключи
+              K1=$(kubectl get secret openbao-bootstrap -n openbao \
+                -o jsonpath='{.data.unseal-key-1}' | base64 -d)
+              K2=$(kubectl get secret openbao-bootstrap -n openbao \
+                -o jsonpath='{.data.unseal-key-2}' | base64 -d)
+
+              echo "Got unseal keys"
+
+              # 5. Unseal (threshold = 2)
+              echo "Unsealing with key 1..."
+              RESULT1=$(curl -s -X POST $BAO_ADDR/v1/sys/unseal \
+                -H "Content-Type: application/json" \
+                -d "{\"key\":\"$K1\"}")
+              echo "Progress: $(echo $RESULT1 | jq -r '.progress')/$(echo $RESULT1 | jq -r '.t')"
+
+              echo "Unsealing with key 2..."
+              RESULT2=$(curl -s -X POST $BAO_ADDR/v1/sys/unseal \
+                -H "Content-Type: application/json" \
+                -d "{\"key\":\"$K2\"}")
+              echo "Progress: $(echo $RESULT2 | jq -r '.progress')/$(echo $RESULT2 | jq -r '.t')"
+
+              # 6. Проверяем результат
+              sleep 2
+              FINAL_STATUS=$(curl -s $BAO_ADDR/v1/sys/seal-status)
+              SEALED=$(echo "$FINAL_STATUS" | jq -r .sealed)
+
+              if [ "$SEALED" = "false" ]; then
+                echo "=== Unseal complete! ==="
+                echo "$FINAL_STATUS" | jq .
+                exit 0
+              else
+                echo "=== Unseal FAILED ==="
+                echo "$FINAL_STATUS" | jq .
+                exit 1
+              fi
+
+      serviceAccountName: openbao-bootstrap
