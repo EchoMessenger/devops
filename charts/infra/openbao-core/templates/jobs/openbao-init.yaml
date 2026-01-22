@@ -10,7 +10,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init
-          image: quay.io/openbao/openbao:2.0.2
+          image: bitnami/kubectl:1.30
           command: ["/bin/sh","-c"]
           env:
             - name: BAO_ADDR
