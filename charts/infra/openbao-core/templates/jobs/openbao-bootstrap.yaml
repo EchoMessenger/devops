@@ -169,7 +169,7 @@ spec:
 
               ESO_ROLE=$(jq -n '{
                 bound_service_account_names: ["external-secrets"],
-                bound_service_account_namespaces: ["external-secrets"],
+                bound_service_account_namespaces: ["external-secrets-system"],
                 policies: ["eso"],
                 ttl: "15m",
                 max_ttl: "1h"
