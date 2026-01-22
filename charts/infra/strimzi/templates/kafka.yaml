@@ -22,3 +22,4 @@ spec:
   entityOperator:
     topicOperator: {}
     userOperator: {}
+    bootstrapServers: kafka-kafka-bootstrap:9093
