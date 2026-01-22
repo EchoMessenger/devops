@@ -33,7 +33,7 @@ spec:
               fi
 
               echo "Initializing OpenBao..."
-              openbao operator init -key-shares=3 -key-threshold=2 -format=json > /tmp/init.json
+              bao operator init -key-shares=3 -key-threshold=2 -format=json > /tmp/init.json
 
               ROOT=$(jq -r .root_token /tmp/init.json)
               K1=$(jq -r .unseal_keys_b64[0] /tmp/init.json)
