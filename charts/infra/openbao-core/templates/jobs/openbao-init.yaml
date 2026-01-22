@@ -43,10 +43,15 @@ spec:
                 -H "Content-Type: application/json" \
                 -d "$INIT_PAYLOAD" > /tmp/init.json
 
+              # Для отладки - показать структуру ответа
+              echo "API Response structure:"
+              cat /tmp/init.json | jq 'keys'
+
               ROOT=$(jq -r .root_token /tmp/init.json)
-              K1=$(jq -r .keys_b64[0] /tmp/init.json)
-              K2=$(jq -r .keys_b64[1] /tmp/init.json)
-              K3=$(jq -r .keys_b64[2] /tmp/init.json)
+              # Исправлено: keys_base64 вместо keys_b64
+              K1=$(jq -r '.keys_base64[0]' /tmp/init.json)
+              K2=$(jq -r '.keys_base64[1]' /tmp/init.json)
+              K3=$(jq -r '.keys_base64[2]' /tmp/init.json)
 
               echo "Storing secrets in k8s..."
 
