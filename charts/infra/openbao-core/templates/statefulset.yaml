@@ -14,12 +14,12 @@ spec:
         app: openbao
     spec:
       serviceAccountName: openbao
-      securityContext:
-        fsGroup: 1000
       containers:
         - name: openbao
           image: quay.io/openbao/openbao:2.0.2
           imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/openbao"
           args:
             - "server"
             - "-config=/openbao/config/extraconfig-from-values.hcl"
@@ -44,6 +44,7 @@ spec:
               mountPath: /openbao/data
             - name: config
               mountPath: /openbao/config
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /v1/sys/health
