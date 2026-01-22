@@ -196,23 +196,23 @@ spec:
               echo "$AUTH_METHODS" | jq -r 'to_entries | map(select(.key != "request_id" and .key != "lease_id" and .key != "renewable" and .key != "lease_duration" and .key != "data" and .key != "wrap_info" and .key != "warnings" and .key != "auth")) | .[].key'
 
               echo ""
-              echo "Policies:"
-              POLICIES=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/policies/acl)
-              if echo "$POLICIES" | jq -e '.keys' >/dev/null 2>&1; then
-                echo "$POLICIES" | jq -r '.keys[]'
-              else
-                echo "Warning: Could not retrieve policies list"
-                echo "$POLICIES" | jq .
-              fi
+              echo "Policies (verifying by reading each):"
+              for policy in admin readonly app-default; do
+                POLICY_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/policies/acl/$policy)
+                if echo "$POLICY_CHECK" | jq -e '.name' >/dev/null 2>&1; then
+                  echo "  ✓ $policy"
+                else
+                  echo "  ✗ $policy - NOT FOUND"
+                fi
+              done
 
               echo ""
               echo "Kubernetes roles:"
               ROLES=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/auth/kubernetes/role?list=true)
               if echo "$ROLES" | jq -e '.data.keys' >/dev/null 2>&1; then
-                echo "$ROLES" | jq -r '.data.keys[]'
+                echo "$ROLES" | jq -r '.data.keys[] | "  ✓ " + .'
               else
                 echo "Warning: Could not retrieve roles list"
-                echo "$ROLES" | jq .
               fi
 
               echo ""
