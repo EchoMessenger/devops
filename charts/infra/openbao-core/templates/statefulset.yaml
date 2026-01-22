@@ -41,7 +41,7 @@ spec:
           imagePullPolicy: IfNotPresent
 
           command:
-            - "/bin/openbao"
+            - "/bin/vault"
           args:
             - "server"
             - "-config=/openbao/config/extraconfig-from-values.hcl"
