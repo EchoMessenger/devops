@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openbao-config
+  labels:
+    app: openbao
+data:
+  extraconfig-from-values.hcl: |
+    disable_mlock = true
+    ui = true
+
+    listener "tcp" {
+      tls_disable = 1
+      address = "[::]:8200"
+      cluster_address = "[::]:8201"
+    }
+
+    storage "file" {
+      path = "/openbao/data"
+    }

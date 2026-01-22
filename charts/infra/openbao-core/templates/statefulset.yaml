@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openbao
+spec:
+  serviceName: openbao-internal
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openbao
+  template:
+    metadata:
+      labels:
+        app: openbao
+    spec:
+      serviceAccountName: openbao
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: openbao
+          image: quay.io/openbao/openbao:2.0.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - "server"
+            - "-config=/openbao/config/extraconfig-from-values.hcl"
+          ports:
+            - containerPort: 8200
+              name: api
+            - containerPort: 8201
+              name: cluster
+          env:
+            - name: BAO_ADDR
+              value: "http://127.0.0.1:8200"
+            - name: BAO_API_ADDR
+              value: "http://$(POD_IP):8200"
+            - name: BAO_CLUSTER_ADDR
+              value: "http://$(HOSTNAME).openbao-internal:8201"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - name: data
+              mountPath: /openbao/data
+            - name: config
+              mountPath: /openbao/config
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health
+              port: 8200
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health
+              port: 8200
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: openbao-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi

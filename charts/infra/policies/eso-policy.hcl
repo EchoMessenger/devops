@@ -1,8 +1,8 @@
 # ghcr
-path "secret/data/registry/ghcr/*" {
+path "secret/data/registry/ghcr" {
   capabilities = ["read"]
 }
-path "secret/metadata/registry/ghcr/*" {
+path "secret/metadata/registry/ghcr" {
   capabilities = ["read"]
 }
 
