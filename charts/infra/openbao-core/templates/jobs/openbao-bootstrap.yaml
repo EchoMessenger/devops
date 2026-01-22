@@ -21,13 +21,13 @@ spec:
 
               echo "=== OpenBao Bootstrap Job ==="
 
-              # 1. Ждём API
+              # 1. Wait for API
               echo "Waiting for OpenBao API..."
               until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
                 sleep 2
               done
 
-              # 2. Ждём unseal
+              # 2. Wait for unseal
               echo "Waiting for unseal..."
               until [ "$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)" = "false" ]; do
                 echo "Still sealed, waiting..."
@@ -35,7 +35,7 @@ spec:
               done
               echo "OpenBao is unsealed!"
 
-              # 3. Получаем root token
+              # 3. Get root token
               echo "Getting root token..."
               ROOT_TOKEN=$(kubectl get secret openbao-bootstrap -n openbao \
                 -o jsonpath='{.data.root-token}' | base64 -d)
@@ -46,7 +46,7 @@ spec:
               fi
               echo "Root token acquired"
 
-              # 4. Проверяем что можем аутентифицироваться
+              # 4. Test authentication
               echo "Testing authentication..."
               AUTH_TEST=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/auth)
               if echo "$AUTH_TEST" | jq -e .errors >/dev/null 2>&1; then
@@ -62,7 +62,7 @@ spec:
               echo ""
               echo "=== Configuring Kubernetes Auth ==="
 
-              # Проверяем, включен ли уже
+              # Check if already enabled
               K8S_AUTH=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
                 $BAO_ADDR/v1/sys/auth | jq -r '.["kubernetes/"]')
 
@@ -78,16 +78,12 @@ spec:
                 echo "Kubernetes auth already enabled"
               fi
 
-              # Конфигурируем Kubernetes auth
+              # Configure Kubernetes auth
               echo "Configuring Kubernetes auth..."
 
-              # Получаем данные кластера
               K8S_HOST="https://kubernetes.default.svc"
-              
-              # Read CA cert into a variable, properly escaped for JSON
               K8S_CA_CERT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
 
-              # Create JSON payload using jq to handle escaping properly
               K8S_CONFIG=$(jq -n \
                 --arg host "$K8S_HOST" \
                 --arg ca "$K8S_CA_CERT" \
@@ -113,13 +109,13 @@ spec:
               echo ""
               echo "=== Creating Policies ==="
 
-              # Policy: admin (full access)
+              # Policy: admin
               echo "Creating admin policy..."
-              cat > /tmp/admin-policy.hcl <<'EOF'
+              cat > /tmp/admin-policy.hcl <<'ADMINPOLICY'
 path "*" {
   capabilities = ["create", "read", "update", "delete", "list", "sudo"]
 }
-EOF
+ADMINPOLICY
 
               ADMIN_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/admin-policy.hcl)" '{policy: $policy}')
               
@@ -136,9 +132,9 @@ EOF
               fi
               echo "Admin policy created"
 
-              # Policy: read-only (для мониторинга)
+              # Policy: readonly
               echo "Creating readonly policy..."
-              cat > /tmp/readonly-policy.hcl <<'EOF'
+              cat > /tmp/readonly-policy.hcl <<'READONLYPOLICY'
 path "sys/health" {
   capabilities = ["read"]
 }
@@ -151,7 +147,7 @@ path "secret/data/*" {
 path "secret/metadata/*" {
   capabilities = ["read", "list"]
 }
-EOF
+READONLYPOLICY
 
               READONLY_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/readonly-policy.hcl)" '{policy: $policy}')
 
@@ -168,16 +164,16 @@ EOF
               fi
               echo "Readonly policy created"
 
-              # Policy: app-default (базовая для приложений)
+              # Policy: app-default
               echo "Creating app-default policy..."
-              cat > /tmp/app-default-policy.hcl <<'EOF'
-path "secret/data/{{ "{{" }}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace{{ "}}" }}/*" {
+              cat > /tmp/app-default-policy.hcl <<"APPPOLICY"
+path "secret/data/{{identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace}}/*" {
   capabilities = ["read", "list"]
 }
 path "secret/data/shared/*" {
   capabilities = ["read", "list"]
 }
-EOF
+APPPOLICY
 
               APP_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/app-default-policy.hcl)" '{policy: $policy}')
 
@@ -200,7 +196,7 @@ EOF
               echo ""
               echo "=== Creating Kubernetes Auth Roles ==="
 
-              # Role: default (для любого сервиса в namespace)
+              # Role: default
               echo "Creating default role..."
               DEFAULT_ROLE=$(jq -n '{
                 bound_service_account_names: ["*"],
@@ -223,7 +219,7 @@ EOF
               fi
               echo "Default role created"
 
-              # Role: admin (для openbao namespace)
+              # Role: admin
               echo "Creating admin role..."
               ADMIN_ROLE=$(jq -n '{
                 bound_service_account_names: ["openbao-admin"],
