@@ -83,16 +83,27 @@ spec:
 
               # Получаем данные кластера
               K8S_HOST="https://kubernetes.default.svc"
-              K8S_CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt | base64 | tr -d '\n')
+              
+              # Read CA cert into a variable, properly escaped for JSON
+              K8S_CA_CERT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
 
-              curl -s -X POST \
+              # Create JSON payload using jq to handle escaping properly
+              K8S_CONFIG=$(jq -n \
+                --arg host "$K8S_HOST" \
+                --arg ca "$K8S_CA_CERT" \
+                '{kubernetes_host: $host, kubernetes_ca_cert: $ca}')
+
+              RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{
-                  \"kubernetes_host\": \"$K8S_HOST\",
-                  \"kubernetes_ca_cert\": \"$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)\"
-                }" \
-                $BAO_ADDR/v1/auth/kubernetes/config
+                -d "$K8S_CONFIG" \
+                $BAO_ADDR/v1/auth/kubernetes/config)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Kubernetes auth configuration failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
 
               echo "Kubernetes auth configured"
 
@@ -104,41 +115,84 @@ spec:
 
               # Policy: admin (full access)
               echo "Creating admin policy..."
-              ADMIN_POLICY='path "*" { capabilities = ["create", "read", "update", "delete", "list", "sudo"] }'
+              cat > /tmp/admin-policy.hcl <<'EOF'
+path "*" {
+  capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+EOF
 
-              curl -s -X POST \
+              ADMIN_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/admin-policy.hcl)" '{policy: $policy}')
+              
+              RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{\"policy\": \"$ADMIN_POLICY\"}" \
-                $BAO_ADDR/v1/sys/policies/acl/admin
+                -d "$ADMIN_POLICY_JSON" \
+                $BAO_ADDR/v1/sys/policies/acl/admin)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Admin policy creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+              echo "Admin policy created"
 
               # Policy: read-only (для мониторинга)
               echo "Creating readonly policy..."
-              READONLY_POLICY='path "sys/health" { capabilities = ["read"] }
-              path "sys/seal-status" { capabilities = ["read"] }
-              path "secret/data/*" { capabilities = ["read", "list"] }
-              path "secret/metadata/*" { capabilities = ["read", "list"] }'
+              cat > /tmp/readonly-policy.hcl <<'EOF'
+path "sys/health" {
+  capabilities = ["read"]
+}
+path "sys/seal-status" {
+  capabilities = ["read"]
+}
+path "secret/data/*" {
+  capabilities = ["read", "list"]
+}
+path "secret/metadata/*" {
+  capabilities = ["read", "list"]
+}
+EOF
 
-              curl -s -X POST \
+              READONLY_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/readonly-policy.hcl)" '{policy: $policy}')
+
+              RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{\"policy\": $(echo "$READONLY_POLICY" | jq -Rs .)}" \
-                $BAO_ADDR/v1/sys/policies/acl/readonly
+                -d "$READONLY_POLICY_JSON" \
+                $BAO_ADDR/v1/sys/policies/acl/readonly)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Readonly policy creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+              echo "Readonly policy created"
 
               # Policy: app-default (базовая для приложений)
               echo "Creating app-default policy..."
-              APP_POLICY='path "secret/data/{{ `{{` }}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace{{ `}}` }}/*" {
-                capabilities = ["read", "list"]
-              }
-              path "secret/data/shared/*" {
-                capabilities = ["read", "list"]
-              }'
+              cat > /tmp/app-default-policy.hcl <<'EOF'
+path "secret/data/{{ `{{` }}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace{{ `}}` }}/*" {
+  capabilities = ["read", "list"]
+}
+path "secret/data/shared/*" {
+  capabilities = ["read", "list"]
+}
+EOF
 
-              curl -s -X POST \
+              APP_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/app-default-policy.hcl)" '{policy: $policy}')
+
+              RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{\"policy\": $(echo "$APP_POLICY" | jq -Rs .)}" \
-                $BAO_ADDR/v1/sys/policies/acl/app-default
+                -d "$APP_POLICY_JSON" \
+                $BAO_ADDR/v1/sys/policies/acl/app-default)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: App-default policy creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+              echo "App-default policy created"
 
               # ============================================
               # 7. Create Kubernetes Auth Roles
@@ -148,31 +202,49 @@ spec:
 
               # Role: default (для любого сервиса в namespace)
               echo "Creating default role..."
-              curl -s -X POST \
+              DEFAULT_ROLE=$(jq -n '{
+                bound_service_account_names: ["*"],
+                bound_service_account_namespaces: ["default", "apps", "staging", "production"],
+                policies: ["app-default"],
+                ttl: "1h",
+                max_ttl: "24h"
+              }')
+
+              RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d '{
-                  "bound_service_account_names": ["*"],
-                  "bound_service_account_namespaces": ["default", "apps", "staging", "production"],
-                  "policies": ["app-default"],
-                  "ttl": "1h",
-                  "max_ttl": "24h"
-                }' \
-                $BAO_ADDR/v1/auth/kubernetes/role/default
+                -d "$DEFAULT_ROLE" \
+                $BAO_ADDR/v1/auth/kubernetes/role/default)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Default role creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+              echo "Default role created"
 
               # Role: admin (для openbao namespace)
               echo "Creating admin role..."
-              curl -s -X POST \
+              ADMIN_ROLE=$(jq -n '{
+                bound_service_account_names: ["openbao-admin"],
+                bound_service_account_namespaces: ["openbao"],
+                policies: ["admin"],
+                ttl: "1h",
+                max_ttl: "4h"
+              }')
+
+              RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d '{
-                  "bound_service_account_names": ["openbao-admin"],
-                  "bound_service_account_namespaces": ["openbao"],
-                  "policies": ["admin"],
-                  "ttl": "1h",
-                  "max_ttl": "4h"
-                }' \
-                $BAO_ADDR/v1/auth/kubernetes/role/admin
+                -d "$ADMIN_ROLE" \
+                $BAO_ADDR/v1/auth/kubernetes/role/admin)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Admin role creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+              echo "Admin role created"
 
               # ============================================
               # 8. Verify Setup
@@ -182,11 +254,17 @@ spec:
 
               echo "Auth methods:"
               curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
-                $BAO_ADDR/v1/sys/auth | jq 'keys'
+                $BAO_ADDR/v1/sys/auth | jq -r 'to_entries | map(.key) | .[]'
 
+              echo ""
               echo "Policies:"
               curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
-                $BAO_ADDR/v1/sys/policies/acl | jq '.keys'
+                $BAO_ADDR/v1/sys/policies/acl | jq -r '.keys | .[]'
+
+              echo ""
+              echo "Kubernetes roles:"
+              curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/auth/kubernetes/role?list=true | jq -r '.data.keys | .[]'
 
               echo ""
               echo "=== Bootstrap Complete! ==="
