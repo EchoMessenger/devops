@@ -38,42 +38,9 @@ spec:
               # ============================================
               # 1. Wait for OpenBao to be UNSEALED
               # ============================================
-              echo "Waiting for OpenBao to be ready and unsealed..."
-              
-              MAX_WAIT=300
-              WAITED=0
-              
-              while true; do
-                # Check if API responds
-                if ! curl -s --connect-timeout 5 $BAO_ADDR/v1/sys/seal-status >/dev/null 2>&1; then
-                  echo "API not ready yet..."
-                  sleep 5
-                  WAITED=$((WAITED + 5))
-                  if [ $WAITED -ge $MAX_WAIT ]; then
-                    echo "ERROR: Timeout waiting for API"
-                    exit 1
-                  fi
-                  continue
-                fi
-                
-                # Check seal status
-                SEALED=$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r '.sealed // "unknown"')
-                
-                if [ "$SEALED" = "false" ]; then
-                  echo "OpenBao is unsealed and ready!"
-                  break
-                elif [ "$SEALED" = "true" ]; then
-                  echo "OpenBao is sealed, waiting for unseal job..."
-                else
-                  echo "Unknown status, waiting..."
-                fi
-                
-                sleep 5
-                WAITED=$((WAITED + 5))
-                if [ $WAITED -ge $MAX_WAIT ]; then
-                  echo "ERROR: Timeout waiting for unseal"
-                  exit 1
-                fi
+              echo "Waiting for OpenBao API..."
+              until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
+                sleep 2
               done
 
               # ============================================
