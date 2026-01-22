@@ -166,9 +166,17 @@ READONLYPOLICY
 
               # Policy: app-default
               echo "Creating app-default policy..."
-              # Use octal codes to create curly braces so Helm doesn't see them as template markers
-              # \173 = {, \175 = }
-              printf 'path "secret/data/\173\173identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace\175\175/*" {\n  capabilities = ["read", "list"]\n}\npath "secret/data/shared/*" {\n  capabilities = ["read", "list"]\n}' > /tmp/app-default-policy.hcl
+              cat > /tmp/app-default-policy.hcl <<'APPPOLICY'
+path "secret/data/__OPEN__identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace__CLOSE__/*" {
+  capabilities = ["read", "list"]
+}
+path "secret/data/shared/*" {
+  capabilities = ["read", "list"]
+}
+APPPOLICY
+              
+              # Replace placeholders with actual curly braces
+              sed -i 's/__OPEN__/{{/g; s/__CLOSE__/}}/g' /tmp/app-default-policy.hcl
 
               APP_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/app-default-policy.hcl)" '{policy: $policy}')
 
