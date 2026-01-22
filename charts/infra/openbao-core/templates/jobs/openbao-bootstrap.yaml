@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "20"
+    "helm.sh/hook-weight": "30"
 spec:
   backoffLimit: 5
   template:

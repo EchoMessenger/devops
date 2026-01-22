@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-weight": "40"
 spec:
   backoffLimit: 5
   template:
@@ -34,6 +34,13 @@ spec:
               until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
                 sleep 2
               done
+
+              echo "Waiting for unseal..."
+              until [ "$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)" = "false" ]; do
+                echo "Still sealed, waiting..."
+                sleep 5
+              done
+              echo "OpenBao is unsealed!"
 
               # ============================================
               # 2. Get root token
