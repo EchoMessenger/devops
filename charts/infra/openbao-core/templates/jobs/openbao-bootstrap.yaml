@@ -2,7 +2,10 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: openbao-bootstrap
-  namespace: openbao
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "20"
 spec:
   backoffLimit: 5
   template:

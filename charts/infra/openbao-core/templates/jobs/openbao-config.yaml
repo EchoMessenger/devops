@@ -3,13 +3,12 @@ kind: Job
 metadata:
   name: openbao-config
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
 spec:
   backoffLimit: 5
   template:
-    metadata:
-      labels:
-        {{- include "openbao.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: config
     spec:
       restartPolicy: OnFailure
       serviceAccountName: {{ include "openbao.serviceAccountName" . }}-bootstrap
@@ -19,7 +18,7 @@ spec:
           command: ["/bin/sh", "-c"]
           env:
             - name: BAO_ADDR
-              value: "http://{{ include "openbao.fullname" . }}:{{ .Values.service.port }}"
+              value: "http://openbao:8200"
           args:
             - |
               set -e
