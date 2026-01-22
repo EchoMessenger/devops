@@ -171,7 +171,7 @@ EOF
               # Policy: app-default (базовая для приложений)
               echo "Creating app-default policy..."
               cat > /tmp/app-default-policy.hcl <<'EOF'
-path "secret/data/{{ `{{` }}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace{{ `}}` }}/*" {
+path "secret/data/{{identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace}}/*" {
   capabilities = ["read", "list"]
 }
 path "secret/data/shared/*" {
