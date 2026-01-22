@@ -19,7 +19,7 @@ spec:
           image: quay.io/openbao/openbao:2.0.2
           imagePullPolicy: IfNotPresent
           command:
-            - "/bin/openbao"
+            - "/openbao"
           args:
             - "server"
             - "-config=/openbao/config/extraconfig-from-values.hcl"
