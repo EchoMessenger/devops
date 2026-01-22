@@ -21,5 +21,5 @@ spec:
       min.insync.replicas: 1
   entityOperator:
     topicOperator: {}
-    userOperator: {}
-    bootstrapServers: kafka-kafka-bootstrap:9093
+    userOperator:
+      tls: true
