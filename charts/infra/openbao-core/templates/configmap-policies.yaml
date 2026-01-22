@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openbao-policies
+  namespace: openbao
+data:
+  admin.hcl: |
+    path "*" {
+      capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+
+  readonly.hcl: |
+    path "sys/health" {
+      capabilities = ["read"]
+    }
+    path "sys/seal-status" {
+      capabilities = ["read"]
+    }
+    path "secret/data/*" {
+      capabilities = ["read", "list"]
+    }
+    path "secret/metadata/*" {
+      capabilities = ["read", "list"]
+    }
+
+  app-default.hcl: |
+    path "secret/data/{{ "{{identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace}}" }}/*" {
+      capabilities = ["read", "list"]
+    }
+    path "secret/data/shared/*" {
+      capabilities = ["read", "list"]
+    }

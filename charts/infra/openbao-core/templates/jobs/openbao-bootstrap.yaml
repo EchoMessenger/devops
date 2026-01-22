@@ -15,6 +15,9 @@ spec:
           env:
             - name: BAO_ADDR
               value: "http://openbao:8200"
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
           args:
             - |
               set -e
@@ -109,89 +112,26 @@ spec:
               echo ""
               echo "=== Creating Policies ==="
 
-              # Policy: admin
-              echo "Creating admin policy..."
-              cat > /tmp/admin-policy.hcl <<'ADMINPOLICY'
-path "*" {
-  capabilities = ["create", "read", "update", "delete", "list", "sudo"]
-}
-ADMINPOLICY
+              # Load policies from mounted ConfigMap
+              for policy_file in /policies/*.hcl; do
+                policy_name=$(basename "$policy_file" .hcl)
+                echo "Creating policy: $policy_name"
+                
+                POLICY_JSON=$(jq -n --arg policy "$(cat $policy_file)" '{policy: $policy}')
+                
+                RESULT=$(curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d "$POLICY_JSON" \
+                  $BAO_ADDR/v1/sys/policies/acl/$policy_name)
 
-              ADMIN_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/admin-policy.hcl)" '{policy: $policy}')
-              
-              RESULT=$(curl -s -X POST \
-                -H "X-Vault-Token: $ROOT_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$ADMIN_POLICY_JSON" \
-                $BAO_ADDR/v1/sys/policies/acl/admin)
-
-              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
-                echo "ERROR: Admin policy creation failed!"
-                echo "$RESULT" | jq .
-                exit 1
-              fi
-              echo "Admin policy created"
-
-              # Policy: readonly
-              echo "Creating readonly policy..."
-              cat > /tmp/readonly-policy.hcl <<'READONLYPOLICY'
-path "sys/health" {
-  capabilities = ["read"]
-}
-path "sys/seal-status" {
-  capabilities = ["read"]
-}
-path "secret/data/*" {
-  capabilities = ["read", "list"]
-}
-path "secret/metadata/*" {
-  capabilities = ["read", "list"]
-}
-READONLYPOLICY
-
-              READONLY_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/readonly-policy.hcl)" '{policy: $policy}')
-
-              RESULT=$(curl -s -X POST \
-                -H "X-Vault-Token: $ROOT_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$READONLY_POLICY_JSON" \
-                $BAO_ADDR/v1/sys/policies/acl/readonly)
-
-              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
-                echo "ERROR: Readonly policy creation failed!"
-                echo "$RESULT" | jq .
-                exit 1
-              fi
-              echo "Readonly policy created"
-
-              # Policy: app-default
-              echo "Creating app-default policy..."
-              cat > /tmp/app-default-policy.hcl <<'APPPOLICY'
-path "secret/data/__OPEN__identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace__CLOSE__/*" {
-  capabilities = ["read", "list"]
-}
-path "secret/data/shared/*" {
-  capabilities = ["read", "list"]
-}
-APPPOLICY
-              
-              # Replace placeholders with actual curly braces
-              sed -i 's/__OPEN__/{{/g; s/__CLOSE__/}}/g' /tmp/app-default-policy.hcl
-
-              APP_POLICY_JSON=$(jq -n --arg policy "$(cat /tmp/app-default-policy.hcl)" '{policy: $policy}')
-
-              RESULT=$(curl -s -X POST \
-                -H "X-Vault-Token: $ROOT_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$APP_POLICY_JSON" \
-                $BAO_ADDR/v1/sys/policies/acl/app-default)
-
-              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
-                echo "ERROR: App-default policy creation failed!"
-                echo "$RESULT" | jq .
-                exit 1
-              fi
-              echo "App-default policy created"
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "ERROR: Policy $policy_name creation failed!"
+                  echo "$RESULT" | jq .
+                  exit 1
+                fi
+                echo "Policy $policy_name created"
+              done
 
               # ============================================
               # 7. Create Kubernetes Auth Roles
@@ -268,4 +208,8 @@ APPPOLICY
               echo ""
               echo "=== Bootstrap Complete! ==="
 
+      volumes:
+        - name: policies
+          configMap:
+            name: openbao-policies
       serviceAccountName: openbao-bootstrap
