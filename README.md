@@ -62,9 +62,7 @@ kubectl exec -n openbao openbao-0 -- sh -c "
 
 Установка:
 ```sh
-helm install strimzi strimzi/strimzi-kafka-operator -n strimzi --set watchNamespaces="{kafka}
+helm install strimzi-operator strimzi/strimzi-kafka-operator --namespace kafka
+# Может вызвать warning, это нормально
+helm install kafka ./strimzi --namespace kafka
 ```
-
-То есть ставится в namespace `strimzi` и следит за namespace `kafka`
-
-
