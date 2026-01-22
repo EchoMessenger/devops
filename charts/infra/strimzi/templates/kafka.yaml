@@ -7,12 +7,6 @@ spec:
   kafka:
     version: {{ .Values.kafka.version }}
     listeners:
-      - name: internal
-        port: 9092
-        type: internal
-        tls: false
-        authentication:
-          type: scram-sha-512
       - name: tls
         port: 9093
         type: internal
