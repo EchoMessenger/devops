@@ -2,6 +2,7 @@ apiVersion: kafka.strimzi.io/v1
 kind: KafkaUser
 metadata:
   name: user
+  namespace: kafka
 spec:
   authentication:
     type: scram-sha-512
