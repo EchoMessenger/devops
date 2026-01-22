@@ -1,0 +1,194 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-bootstrap
+  namespace: openbao
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: bitnami/kubectl:latest
+          command: ["/bin/sh", "-c"]
+          env:
+            - name: BAO_ADDR
+              value: "http://openbao:8200"
+          args:
+            - |
+              set -e
+
+              echo "=== OpenBao Bootstrap Job ==="
+
+              # 1. Ждём API
+              echo "Waiting for OpenBao API..."
+              until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
+                sleep 2
+              done
+
+              # 2. Ждём unseal
+              echo "Waiting for unseal..."
+              until [ "$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)" = "false" ]; do
+                echo "Still sealed, waiting..."
+                sleep 5
+              done
+              echo "OpenBao is unsealed!"
+
+              # 3. Получаем root token
+              echo "Getting root token..."
+              ROOT_TOKEN=$(kubectl get secret openbao-bootstrap -n openbao \
+                -o jsonpath='{.data.root-token}' | base64 -d)
+
+              if [ -z "$ROOT_TOKEN" ] || [ "$ROOT_TOKEN" = "null" ]; then
+                echo "ERROR: Root token not found!"
+                exit 1
+              fi
+              echo "Root token acquired"
+
+              # 4. Проверяем что можем аутентифицироваться
+              echo "Testing authentication..."
+              AUTH_TEST=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/auth)
+              if echo "$AUTH_TEST" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Authentication failed!"
+                echo "$AUTH_TEST" | jq .
+                exit 1
+              fi
+              echo "Authentication OK"
+
+              # ============================================
+              # 5. Enable Kubernetes Auth Method
+              # ============================================
+              echo ""
+              echo "=== Configuring Kubernetes Auth ==="
+
+              # Проверяем, включен ли уже
+              K8S_AUTH=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/auth | jq -r '.["kubernetes/"]')
+
+              if [ "$K8S_AUTH" = "null" ]; then
+                echo "Enabling Kubernetes auth..."
+                curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{"type": "kubernetes"}' \
+                  $BAO_ADDR/v1/sys/auth/kubernetes
+                echo "Kubernetes auth enabled"
+              else
+                echo "Kubernetes auth already enabled"
+              fi
+
+              # Конфигурируем Kubernetes auth
+              echo "Configuring Kubernetes auth..."
+
+              # Получаем данные кластера
+              K8S_HOST="https://kubernetes.default.svc"
+              K8S_CA=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt | base64 | tr -d '\n')
+
+              curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"kubernetes_host\": \"$K8S_HOST\",
+                  \"kubernetes_ca_cert\": \"$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)\"
+                }" \
+                $BAO_ADDR/v1/auth/kubernetes/config
+
+              echo "Kubernetes auth configured"
+
+              # ============================================
+              # 6. Create Policies
+              # ============================================
+              echo ""
+              echo "=== Creating Policies ==="
+
+              # Policy: admin (full access)
+              echo "Creating admin policy..."
+              ADMIN_POLICY='path "*" { capabilities = ["create", "read", "update", "delete", "list", "sudo"] }'
+
+              curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"policy\": \"$ADMIN_POLICY\"}" \
+                $BAO_ADDR/v1/sys/policies/acl/admin
+
+              # Policy: read-only (для мониторинга)
+              echo "Creating readonly policy..."
+              READONLY_POLICY='path "sys/health" { capabilities = ["read"] }
+              path "sys/seal-status" { capabilities = ["read"] }
+              path "secret/data/*" { capabilities = ["read", "list"] }
+              path "secret/metadata/*" { capabilities = ["read", "list"] }'
+
+              curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"policy\": $(echo "$READONLY_POLICY" | jq -Rs .)}" \
+                $BAO_ADDR/v1/sys/policies/acl/readonly
+
+              # Policy: app-default (базовая для приложений)
+              echo "Creating app-default policy..."
+              APP_POLICY='path "secret/data/{{identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace}}/*" {
+                capabilities = ["read", "list"]
+              }
+              path "secret/data/shared/*" {
+                capabilities = ["read", "list"]
+              }'
+
+              curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"policy\": $(echo "$APP_POLICY" | jq -Rs .)}" \
+                $BAO_ADDR/v1/sys/policies/acl/app-default
+
+              # ============================================
+              # 7. Create Kubernetes Auth Roles
+              # ============================================
+              echo ""
+              echo "=== Creating Kubernetes Auth Roles ==="
+
+              # Role: default (для любого сервиса в namespace)
+              echo "Creating default role..."
+              curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "bound_service_account_names": ["*"],
+                  "bound_service_account_namespaces": ["default", "apps", "staging", "production"],
+                  "policies": ["app-default"],
+                  "ttl": "1h",
+                  "max_ttl": "24h"
+                }' \
+                $BAO_ADDR/v1/auth/kubernetes/role/default
+
+              # Role: admin (для openbao namespace)
+              echo "Creating admin role..."
+              curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "bound_service_account_names": ["openbao-admin"],
+                  "bound_service_account_namespaces": ["openbao"],
+                  "policies": ["admin"],
+                  "ttl": "1h",
+                  "max_ttl": "4h"
+                }' \
+                $BAO_ADDR/v1/auth/kubernetes/role/admin
+
+              # ============================================
+              # 8. Verify Setup
+              # ============================================
+              echo ""
+              echo "=== Verifying Setup ==="
+
+              echo "Auth methods:"
+              curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/auth | jq 'keys'
+
+              echo "Policies:"
+              curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/policies/acl | jq '.keys'
+
+              echo ""
+              echo "=== Bootstrap Complete! ==="
+
+      serviceAccountName: openbao-bootstrap
