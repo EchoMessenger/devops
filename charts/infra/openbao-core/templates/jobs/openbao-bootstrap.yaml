@@ -127,7 +127,7 @@ spec:
 
               # Policy: app-default (базовая для приложений)
               echo "Creating app-default policy..."
-              APP_POLICY='path "secret/data/{{identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace}}/*" {
+              APP_POLICY='path "secret/data/{{ `{{` }}identity.entity.aliases.auth_kubernetes_*.metadata.service_account_namespace{{ `}}` }}/*" {
                 capabilities = ["read", "list"]
               }
               path "secret/data/shared/*" {
