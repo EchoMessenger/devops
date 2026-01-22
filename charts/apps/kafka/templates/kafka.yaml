@@ -22,3 +22,6 @@ spec:
   entityOperator:
     topicOperator: {}
     userOperator: {}
+  nodePools:
+    - broker
+    - controller
