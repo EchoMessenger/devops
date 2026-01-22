@@ -35,8 +35,7 @@ spec:
               echo "Initializing OpenBao via API..."
 
               INIT_PAYLOAD='{
-                "secret_shares": 3,
-                "secret_threshold": 2
+                "secret_shares": 3
               }'
 
               curl -s -X POST $BAO_ADDR/v1/sys/init \
