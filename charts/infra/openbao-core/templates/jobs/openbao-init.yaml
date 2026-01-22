@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-init
+  namespace: openbao
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: quay.io/openbao/openbao:2.0.2
+          command: ["/bin/sh","-c"]
+          env:
+            - name: BAO_ADDR
+              value: "http://openbao:8200"
+          args:
+            - |
+              set -e
+
+              echo "Waiting for OpenBao API..."
+              until curl -s $BAO_ADDR/v1/sys/health >/dev/null; do
+                sleep 2
+              done
+
+              echo "Checking init status..."
+              INIT=$(curl -s $BAO_ADDR/v1/sys/init | jq -r .initialized)
+
+              if [ "$INIT" = "true" ]; then
+                echo "Already initialized"
+                exit 0
+              fi
+
+              echo "Initializing OpenBao..."
+              openbao operator init -key-shares=3 -key-threshold=2 -format=json > /tmp/init.json
+
+              ROOT=$(jq -r .root_token /tmp/init.json)
+              K1=$(jq -r .unseal_keys_b64[0] /tmp/init.json)
+              K2=$(jq -r .unseal_keys_b64[1] /tmp/init.json)
+              K3=$(jq -r .unseal_keys_b64[2] /tmp/init.json)
+
+              echo "Storing secrets in k8s..."
+
+              kubectl -n openbao patch secret openbao-bootstrap \
+                --type merge \
+                -p "{\"stringData\":{
+                  \"root-token\":\"$ROOT\",
+                  \"unseal-key-1\":\"$K1\",
+                  \"unseal-key-2\":\"$K2\",
+                  \"unseal-key-3\":\"$K3\"
+                }}"
+
+              echo "Init done"
+      serviceAccountName: openbao-bootstrap
