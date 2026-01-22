@@ -32,13 +32,21 @@ spec:
                 exit 0
               fi
 
-              echo "Initializing OpenBao..."
-              bao operator init -key-shares=3 -key-threshold=2 -format=json > /tmp/init.json
+              echo "Initializing OpenBao via API..."
+
+              INIT_PAYLOAD='{
+                "secret_shares": 3,
+                "secret_threshold": 2
+              }'
+
+              curl -s -X POST $BAO_ADDR/v1/sys/init \
+                -H "Content-Type: application/json" \
+                -d "$INIT_PAYLOAD" > /tmp/init.json
 
               ROOT=$(jq -r .root_token /tmp/init.json)
-              K1=$(jq -r .unseal_keys_b64[0] /tmp/init.json)
-              K2=$(jq -r .unseal_keys_b64[1] /tmp/init.json)
-              K3=$(jq -r .unseal_keys_b64[2] /tmp/init.json)
+              K1=$(jq -r .keys_b64[0] /tmp/init.json)
+              K2=$(jq -r .keys_b64[1] /tmp/init.json)
+              K3=$(jq -r .keys_b64[2] /tmp/init.json)
 
               echo "Storing secrets in k8s..."
 
