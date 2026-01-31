@@ -14,7 +14,7 @@ spec:
     type: jbod
     volumes:
       - id: 0
-        type: {{ .Values.storage.class }}
+        type: {{ .Values.storage.type }}
         size: {{ .Values.storage.size }}
         deleteClaim: {{ .Values.storage.deleteClaim }}
         kraftMetadata: shared
