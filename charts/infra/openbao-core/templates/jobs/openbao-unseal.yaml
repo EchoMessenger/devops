@@ -116,5 +116,3 @@ spec:
                     echo "$FINAL_STATUS" | jq .
                     exit 1
                   fi
-
-      serviceAccountName: openbao-bootstrap
