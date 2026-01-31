@@ -13,7 +13,6 @@ spec:
   storage:
     type: jbod
     volumes:
-      volumes:
       - id: 0
         type: {{ .Values.storage.class }}
         size: {{ .Values.storage.size }}
