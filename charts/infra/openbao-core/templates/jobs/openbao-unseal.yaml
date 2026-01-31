@@ -1,20 +1,24 @@
 apiVersion: batch/v1
-kind: Job
+kind: CronJob
 metadata:
   name: openbao-unseal
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "20"
 spec:
-  backoffLimit: 5
-  template:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
     spec:
-      restartPolicy: OnFailure
-      containers:
-        - name: unseal
-          image: bitnami/kubectl:latest
-          command: ["/bin/sh", "-c"]
+      backoffLimit: 5
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: openbao-bootstrap
+          containers:
+            - name: unseal
+              image: bitnami/kubectl:latest
+              command: ["/bin/sh", "-c"]
           env:
             - name: BAO_ADDR
               value: "http://openbao:8200"
