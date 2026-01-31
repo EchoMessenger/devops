@@ -1,14 +1,14 @@
 apiVersion: batch/v1
-kind: CronJob
+kind: Job
 metadata:
   name: openbao-unseal
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "20"
 spec:
-  schedule: "*/2 * * * *"
-  concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 3
-  jobTemplate:
+  backoffLimit: 5
+  template:
     spec:
       backoffLimit: 5
       template:
