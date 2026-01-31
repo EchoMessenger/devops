@@ -1,7 +1,7 @@
 apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
-  name: controller
+  name: dual-role
   namespace: {{ .Values.kafka.namespace }}
   labels:
     strimzi.io/cluster: {{ .Values.kafka.name }}
@@ -9,12 +9,13 @@ spec:
   replicas: 1
   roles:
     - controller
+    - broker
   storage:
     type: jbod
     volumes:
+      volumes:
       - id: 0
-        type: persistent-claim
-        class: {{ .Values.storage.class }}
+        type: {{ .Values.storage.class }}
         size: {{ .Values.storage.size }}
         deleteClaim: {{ .Values.storage.deleteClaim }}
         kraftMetadata: shared
