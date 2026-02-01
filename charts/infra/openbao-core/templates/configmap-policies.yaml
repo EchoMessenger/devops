@@ -24,7 +24,7 @@ data:
     }
 
   eso.hcl: |
-    # ghcr
+    # ghcr - только чтение
     path "secret/data/registry/ghcr" {
       capabilities = ["read"]
     }
@@ -32,18 +32,18 @@ data:
       capabilities = ["read"]
     }
 
-    # router
+    # router - только чтение
     path "secret/data/router/*" {
       capabilities = ["read"]
     }
     path "secret/metadata/router/*" {
       capabilities = ["read"]
     }
-
-    # kafka
+    
+    # kafka - чтение И запись для PushSecret
     path "secret/data/kafka/*" {
-      capabilities = ["read"]
+      capabilities = ["create", "read", "update", "delete"]
     }
     path "secret/metadata/kafka/*" {
-      capabilities = ["read"]
+      capabilities = ["create", "read", "update", "delete", "list"]
     }
