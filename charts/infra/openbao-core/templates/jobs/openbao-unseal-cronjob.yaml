@@ -26,14 +26,6 @@ spec:
                 - |
                   set -e
 
-                  echo "[cron-unseal] checking OpenBao..."
-
-                  # 1. API недоступен → просто выходим
-                  if ! curl -sf $BAO_ADDR/v1/sys/health >/dev/null 2>&1; then
-                    echo "[cron-unseal] API not ready, exit"
-                    exit 0
-                  fi
-
                   # 2. Проверяем sealed
                   SEALED=$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)
 
