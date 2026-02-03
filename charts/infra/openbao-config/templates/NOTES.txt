@@ -1,0 +1,30 @@
+=======================================================
+  OpenBao Configuration Deployed!
+=======================================================
+
+OpenBao Server: {{ include "openbao-config.serverAddr" . }}
+
+Configured Namespaces:
+{{- range $nsName, $nsConfig := .Values.namespaces }}
+{{- if $nsConfig.enabled }}
+  - {{ $nsName }}
+    ServiceAccounts: {{ range $sa := $nsConfig.serviceAccounts }}{{ $sa.name }} {{ end }}
+    Role: {{ $nsName }}
+{{- end }}
+{{- end }}
+
+To verify the installation:
+
+  # Check OpenBao status
+  kubectl exec -it -n {{ .Release.Namespace }} \
+    $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/name=openbao -o jsonpath='{.items[0].metadata.name}') \
+    -- bao status
+
+  # Check SecretStores (can be InvalidProviderConfig as OpenBao is sealed)
+  {{- range $nsName, $nsConfig := .Values.namespaces }}
+  {{- if $nsConfig.enabled }}
+  kubectl get secretstore -n {{ $nsName }}
+  {{- end }}
+  {{- end }}
+
+=======================================================

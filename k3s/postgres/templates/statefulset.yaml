@@ -5,7 +5,7 @@ metadata:
   namespace: tinode
 spec:
   serviceName: postgres
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: postgres
@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 5432
           envFrom:
@@ -25,7 +25,7 @@ spec:
                 name: pg-secret
           env:
             - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
+              value: {{ .Values.postgres.dataDir }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -43,17 +43,3 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: postgres-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres
-  namespace: tinode
-spec:
-  type: ClusterIP
-  selector:
-    app: postgres
-  ports:
-    - port: 5432
-      targetPort: 5432
-      name: postgres

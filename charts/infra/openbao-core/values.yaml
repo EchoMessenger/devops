@@ -1,0 +1,58 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/openbao/openbao
+  tag: "2.0.2"
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: openbao
+
+service:
+  type: ClusterIP
+  port: 8200
+  clusterPort: 8201
+
+storage:
+  size: 1Gi
+  storageClass: local-path
+  path: /openbao/data
+
+resources: {}
+
+config:
+  enabled: true
+  disable_mlock: true
+  ui: true
+  
+  # Secrets engines to enable
+  secretsEngines:
+    kv:
+      enabled: true
+      paths:
+        - secret
+        - apps
+    
+    transit:
+      enabled: true
+      createDefaultKey: true
+    
+  # Audit logging
+  audit:
+    enabled: true
+    type: file
+    path: /vault/audit/audit.log
+  
+  # Sample data
+  createDemoSecret: false
+
+authDelegator:
+  enabled: true
+
+openbao:
+  enabled: true
+  server: http://openbao:8200
+  path: secret
+  version: v2
+  kubernetesAuthMount: kubernetes

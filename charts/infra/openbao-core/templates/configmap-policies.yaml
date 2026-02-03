@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openbao-policies
+  namespace: {{ .Release.Namespace }}
+data:
+  admin.hcl: |
+    path "*" {
+      capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+
+  readonly.hcl: |
+    path "sys/health" {
+      capabilities = ["read"]
+    }
+    path "sys/seal-status" {
+      capabilities = ["read"]
+    }
+    path "secret/data/*" {
+      capabilities = ["read", "list"]
+    }
+    path "secret/metadata/*" {
+      capabilities = ["read", "list"]
+    }
+
+  eso.hcl: |
+    # ghcr - только чтение
+    path "secret/data/registry/ghcr" {
+      capabilities = ["read"]
+    }
+    path "secret/metadata/registry/ghcr" {
+      capabilities = ["read"]
+    }
+
+    # router - только чтение
+    path "secret/data/router/*" {
+      capabilities = ["read"]
+    }
+    path "secret/metadata/router/*" {
+      capabilities = ["read"]
+    }
+    
+    # kafka - чтение И запись для PushSecret
+    path "secret/data/kafka/*" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/kafka/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }

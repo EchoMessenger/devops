@@ -1,0 +1,230 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-bootstrap
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "30"
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: bitnami/kubectl:latest
+          command: ["/bin/sh", "-c"]
+          env:
+            - name: BAO_ADDR
+              value: "http://openbao:8200"
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
+          args:
+            - |
+              set -e
+
+              echo "=== OpenBao Bootstrap Job ==="
+
+              # 1. Wait for API
+              echo "Waiting for OpenBao API..."
+              until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
+                sleep 2
+              done
+
+              # 2. Wait for unseal
+              echo "Waiting for unseal..."
+              until [ "$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)" = "false" ]; do
+                echo "Still sealed, waiting..."
+                sleep 5
+              done
+              echo "OpenBao is unsealed!"
+
+              # 3. Get root token
+              echo "Getting root token..."
+              ROOT_TOKEN=$(kubectl get secret openbao-bootstrap -n openbao \
+                -o jsonpath='{.data.root-token}' | base64 -d)
+
+              if [ -z "$ROOT_TOKEN" ] || [ "$ROOT_TOKEN" = "null" ]; then
+                echo "ERROR: Root token not found!"
+                exit 1
+              fi
+              echo "Root token acquired"
+
+              # 4. Test authentication
+              echo "Testing authentication..."
+              AUTH_TEST=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/auth)
+              if echo "$AUTH_TEST" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Authentication failed!"
+                echo "$AUTH_TEST" | jq .
+                exit 1
+              fi
+              echo "Authentication OK"
+
+              # ============================================
+              # 5. Enable Kubernetes Auth Method
+              # ============================================
+              echo ""
+              echo "=== Configuring Kubernetes Auth ==="
+
+              # Check if already enabled
+              K8S_AUTH=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" \
+                $BAO_ADDR/v1/sys/auth | jq -r '.["kubernetes/"]')
+
+              if [ "$K8S_AUTH" = "null" ]; then
+                echo "Enabling Kubernetes auth..."
+                curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{"type": "kubernetes"}' \
+                  $BAO_ADDR/v1/sys/auth/kubernetes
+                echo "Kubernetes auth enabled"
+              else
+                echo "Kubernetes auth already enabled"
+              fi
+
+              # Configure Kubernetes auth
+              echo "Configuring Kubernetes auth..."
+
+              K8S_HOST="https://kubernetes.default.svc"
+              K8S_CA_CERT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
+
+              K8S_CONFIG=$(jq -n \
+                --arg host "$K8S_HOST" \
+                --arg ca "$K8S_CA_CERT" \
+                '{kubernetes_host: $host, kubernetes_ca_cert: $ca}')
+
+              RESULT=$(curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$K8S_CONFIG" \
+                $BAO_ADDR/v1/auth/kubernetes/config)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Kubernetes auth configuration failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+
+              echo "Kubernetes auth configured"
+
+              # ============================================
+              # 6. Create Policies
+              # ============================================
+              echo ""
+              echo "=== Creating Policies ==="
+
+              # Load policies from mounted ConfigMap
+              for policy_file in /policies/*.hcl; do
+                policy_name=$(basename "$policy_file" .hcl)
+                echo "Creating policy: $policy_name"
+                
+                POLICY_JSON=$(jq -n --arg policy "$(cat $policy_file)" '{policy: $policy}')
+                
+                RESULT=$(curl -s -X POST \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d "$POLICY_JSON" \
+                  $BAO_ADDR/v1/sys/policies/acl/$policy_name)
+
+                if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                  echo "ERROR: Policy $policy_name creation failed!"
+                  echo "$RESULT" | jq .
+                  exit 1
+                fi
+                echo "Policy $policy_name created"
+              done
+
+              # ============================================
+              # 7. Create Kubernetes Auth Roles
+              # ============================================
+              echo ""
+              echo "=== Creating Kubernetes Auth Roles ==="
+
+              # Role: admin
+              echo "Creating admin role..."
+              ADMIN_ROLE=$(jq -n '{
+                bound_service_account_names: ["openbao-admin"],
+                bound_service_account_namespaces: ["openbao"],
+                policies: ["admin"],
+                ttl: "1h",
+                max_ttl: "4h"
+              }')
+
+              RESULT=$(curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$ADMIN_ROLE" \
+                $BAO_ADDR/v1/auth/kubernetes/role/admin)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: Admin role creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+              echo "Admin role created"
+
+              echo "Creating ESO role..."
+
+              ESO_ROLE=$(jq -n '{
+                bound_service_account_names: ["external-secrets"],
+                bound_service_account_namespaces: ["external-secrets-system"],
+                policies: ["eso"],
+                ttl: "15m",
+                max_ttl: "1h"
+              }')
+
+              RESULT=$(curl -s -X POST \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$ESO_ROLE" \
+                $BAO_ADDR/v1/auth/kubernetes/role/eso)
+
+              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
+                echo "ERROR: ESO role creation failed!"
+                echo "$RESULT" | jq .
+                exit 1
+              fi
+
+              echo "ESO role created"
+
+              # ============================================
+              # 8. Verify Setup
+              # ============================================
+              echo ""
+              echo "=== Verifying Setup ==="
+
+              echo "Auth methods:"
+              AUTH_METHODS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/auth)
+              echo "$AUTH_METHODS" | jq -r 'to_entries | map(select(.key != "request_id" and .key != "lease_id" and .key != "renewable" and .key != "lease_duration" and .key != "data" and .key != "wrap_info" and .key != "warnings" and .key != "auth")) | .[].key'
+
+              echo ""
+              echo "Policies:"
+              for policy in admin readonly eso; do
+                POLICY_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/policies/acl/$policy)
+                # Check if response doesn't contain errors (policies return {rules: "..."} or {policy: "..."})
+                if ! echo "$POLICY_CHECK" | jq -e '.errors' >/dev/null 2>&1; then
+                  echo "  ✓ $policy"
+                else
+                  echo "  ✗ $policy - NOT FOUND"
+                fi
+              done
+
+              echo ""
+              echo "Kubernetes roles:"
+              ROLES=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/auth/kubernetes/role?list=true)
+              if echo "$ROLES" | jq -e '.data.keys' >/dev/null 2>&1; then
+                echo "$ROLES" | jq -r '.data.keys[] | "  ✓ " + .'
+              else
+                echo "Warning: Could not retrieve roles list"
+              fi
+
+              echo ""
+              echo "=== Bootstrap Complete! ==="
+
+      volumes:
+        - name: policies
+          configMap:
+            name: openbao-policies
+      serviceAccountName: openbao-bootstrap

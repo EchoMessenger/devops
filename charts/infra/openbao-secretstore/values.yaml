@@ -1,0 +1,11 @@
+openbao:
+  enabled: true
+  server: "http://openbao.openbao.svc.cluster.local:8200"
+  path: "secret"
+  version: "v2"
+  kubernetesAuthMount: "kubernetes"
+  role: "eso"
+  caBundle: ""
+
+clusterSecretStore:
+  name: openbao-global

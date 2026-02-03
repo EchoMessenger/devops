@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: openbao-unseal-cron
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: openbao-bootstrap
+          restartPolicy: OnFailure
+          containers:
+            - name: unseal
+              image: bitnami/kubectl:latest
+              command: ["/bin/sh", "-c"]
+              env:
+                - name: BAO_ADDR
+                  value: "http://openbao:8200"
+              args:
+                - |
+                  set -e
+
+                  # 2. Проверяем sealed
+                  SEALED=$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)
+
+                  if [ "$SEALED" = "false" ]; then
+                    echo "[cron-unseal] already unsealed"
+                    exit 0
+                  fi
+
+                  echo "[cron-unseal] sealed, trying unseal"
+
+                  # 3. Читаем ключи (если нет — выходим)
+                  K1=$(kubectl get secret openbao-bootstrap -n openbao \
+                    -o jsonpath='{.data.unseal-key-1}' 2>/dev/null | base64 -d || true)
+                  K2=$(kubectl get secret openbao-bootstrap -n openbao \
+                    -o jsonpath='{.data.unseal-key-2}' 2>/dev/null | base64 -d || true)
+
+                  if [ -z "$K1" ] || [ -z "$K2" ]; then
+                    echo "[cron-unseal] keys not found, exit"
+                    exit 0
+                  fi
+
+                  # 4. Unseal
+                  curl -s -X POST $BAO_ADDR/v1/sys/unseal \
+                    -H "Content-Type: application/json" \
+                    -d "{\"key\":\"$K1\"}" >/dev/null
+
+                  curl -s -X POST $BAO_ADDR/v1/sys/unseal \
+                    -H "Content-Type: application/json" \
+                    -d "{\"key\":\"$K2\"}" >/dev/null
+
+                  # 5. Финальная проверка
+                  FINAL=$(curl -s $BAO_ADDR/v1/sys/seal-status | jq -r .sealed)
+
+                  if [ "$FINAL" = "false" ]; then
+                    echo "[cron-unseal] unseal successful"
+                    exit 0
+                  else
+                    echo "[cron-unseal] unseal failed"
+                    exit 1
+                  fi

@@ -1,0 +1,29 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: openbao-selfsigned-issuer
+  namespace: openbao
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-server-tls
+  namespace: openbao
+spec:
+  secretName: openbao-server-tls
+  commonName: openbao.openbao.svc.cluster.local
+  dnsNames:
+  - openbao
+  - openbao.openbao
+  - openbao.openbao.svc
+  - openbao.openbao.svc.cluster.local
+  - localhost
+  ipAddresses:
+  - 127.0.0.1
+  - 10.129.0.24
+  isCA: true  # Добавим это для самоподписанного сертификата
+  issuerRef:
+    name: openbao-selfsigned-issuer
+    kind: Issuer

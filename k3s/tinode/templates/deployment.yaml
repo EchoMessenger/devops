@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinode-server
+  namespace: tinode
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: tinode
+  template:
+    metadata:
+      labels:
+        app: tinode
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: tinode
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 6060
+          envFrom:
+            - secretRef:
+                name: tinode-secret
+          volumeMounts:
+            - name: config
+              mountPath: /tinode.conf
+              subPath: tinode.conf
+            - name: uploads
+              mountPath: /app/uploads
+          livenessProbe:
+            tcpSocket: { port: 6060 }
+            initialDelaySeconds: 20
+          readinessProbe:
+            tcpSocket: { port: 6060 }
+            initialDelaySeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: tinode-config
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: tinode-uploads-pvc

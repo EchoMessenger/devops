@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: provectuslabs/kafka-ui
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 8080
+  nodePort: 30080
+
+kafka:
+  name: kafka
+  bootstrapServers: kafka-kafka-bootstrap:9092
+  username: nikita
+  securityProtocol: SASL_PLAINTEXT
+  saslMechanism: SCRAM-SHA-512
+
+infisical:
+  identityId: 15cd709a-c052-440d-9e68-9c4e860ddda9
+  project: echo-rvq-s
+  env: dev
+  serviceAccount:
+    name: infisical-service-account
+    namespace: default
