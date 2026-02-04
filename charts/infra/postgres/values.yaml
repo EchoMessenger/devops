@@ -24,7 +24,7 @@ pushSecret:
   enabled: true
   secretStoreName: openbao-global
   # Путь в OpenBao (для KV v2: secret/data/...)
-  remotePath: secret/data/tinode/postgres
+  remotePath: tinode/postgres
   # Использовать properties (для KV v2)
   useProperty: true
   # Интервал синхронизации
