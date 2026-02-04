@@ -123,6 +123,7 @@ openbao:
   enabled: true
 
   # -- OpenBao server address
+  # Format: http(s)://<service-name>:<port>
   server: http://openbao:8200
 
   # -- Base path for KV secrets

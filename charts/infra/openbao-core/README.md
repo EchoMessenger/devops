@@ -27,7 +27,7 @@ Single-node OpenBao with automatic initialization and configuration
 | openbao.enabled | bool | `true` | Enable OpenBao client integration (for init jobs, ESO, etc.) |
 | openbao.kubernetesAuthMount | string | `"kubernetes"` | Kubernetes auth mount path in OpenBao |
 | openbao.path | string | `"secret"` | Base path for KV secrets |
-| openbao.server | string | `"http://openbao:8200"` | OpenBao server address |
+| openbao.server | string | `"http://openbao:8200"` | OpenBao server address Format: http(s)://<service-name>:<port> |
 | openbao.version | string | `"v2"` | KV secrets engine version |
 | replicaCount | int | `1` | Number of OpenBao replicas to run |
 | resources | object | `{}` | Pod resource requests and limits |
