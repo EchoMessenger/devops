@@ -47,3 +47,10 @@ data:
     path "secret/metadata/kafka/*" {
       capabilities = ["create", "read", "update", "delete", "list"]
     }
+
+    path "secret/data/tinode/*" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/tinode/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
