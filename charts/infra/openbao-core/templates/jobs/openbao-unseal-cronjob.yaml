@@ -21,8 +21,8 @@ spec:
             app.kubernetes.io/name: {{ include "openbao.name" . }}
             app.kubernetes.io/instance: {{ .Release.Name }}
         spec:
-          serviceAccountName: openbao-bootstrap
           restartPolicy: OnFailure
+          serviceAccountName: openbao-bootstrap
           containers:
             - name: unseal
               image: bitnami/kubectl:latest

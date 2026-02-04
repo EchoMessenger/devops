@@ -19,6 +19,11 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       restartPolicy: OnFailure
+      serviceAccountName: openbao-bootstrap
+      volumes:
+        - name: policies
+          configMap:
+            name: openbao-policies
       containers:
         - name: bootstrap
           image: bitnami/kubectl:latest
@@ -70,9 +75,7 @@ spec:
               fi
               echo "Authentication OK"
 
-              # ============================================
               # 5. Enable Kubernetes Auth Method
-              # ============================================
               echo ""
               echo "=== Configuring Kubernetes Auth ==="
 
@@ -117,9 +120,7 @@ spec:
 
               echo "Kubernetes auth configured"
 
-              # ============================================
               # 6. Create Policies
-              # ============================================
               echo ""
               echo "=== Creating Policies ==="
 
@@ -144,9 +145,7 @@ spec:
                 echo "Policy $policy_name created"
               done
 
-              # ============================================
               # 7. Create Kubernetes Auth Roles
-              # ============================================
               echo ""
               echo "=== Creating Kubernetes Auth Roles ==="
 
@@ -197,9 +196,7 @@ spec:
 
               echo "ESO role created"
 
-              # ============================================
               # 8. Verify Setup
-              # ============================================
               echo ""
               echo "=== Verifying Setup ==="
 
@@ -213,9 +210,9 @@ spec:
                 POLICY_CHECK=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/policies/acl/$policy)
                 # Check if response doesn't contain errors (policies return {rules: "..."} or {policy: "..."})
                 if ! echo "$POLICY_CHECK" | jq -e '.errors' >/dev/null 2>&1; then
-                  echo "  ✓ $policy"
+                  echo "  + $policy"
                 else
-                  echo "  ✗ $policy - NOT FOUND"
+                  echo "  x $policy - NOT FOUND"
                 fi
               done
 
@@ -223,16 +220,10 @@ spec:
               echo "Kubernetes roles:"
               ROLES=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/auth/kubernetes/role?list=true)
               if echo "$ROLES" | jq -e '.data.keys' >/dev/null 2>&1; then
-                echo "$ROLES" | jq -r '.data.keys[] | "  ✓ " + .'
+                echo "$ROLES" | jq -r '.data.keys[] | "  + " + .'
               else
                 echo "Warning: Could not retrieve roles list"
               fi
 
               echo ""
               echo "=== Bootstrap Complete! ==="
-
-      volumes:
-        - name: policies
-          configMap:
-            name: openbao-policies
-      serviceAccountName: openbao-bootstrap

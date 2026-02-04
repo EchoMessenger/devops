@@ -35,9 +35,7 @@ spec:
               echo "Configuring secrets engines, audit, and namespaces"
               echo ""
 
-              # ============================================
               # 1. Wait for OpenBao to be UNSEALED
-              # ============================================
               echo "Waiting for OpenBao API..."
               until curl -s $BAO_ADDR/v1/sys/health >/dev/null 2>&1; do
                 sleep 2
@@ -50,9 +48,7 @@ spec:
               done
               echo "OpenBao is unsealed!"
 
-              # ============================================
               # 2. Get root token
-              # ============================================
               echo ""
               echo "Getting root token..."
               
@@ -87,9 +83,7 @@ spec:
               fi
               echo "Authentication OK"
 
-              # ============================================
               # 3. Enable KV Secrets Engine
-              # ============================================
               echo ""
               echo "=== Configuring KV Secrets Engine ==="
 
@@ -97,7 +91,7 @@ spec:
 
               # KV v2 at secret/
               if echo "$MOUNTS" | jq -e '.["secret/"]' >/dev/null 2>&1; then
-                echo "✓ KV v2 already enabled at secret/"
+                echo "KV v2 already enabled at secret/"
               else
                 echo "Enabling KV v2 at secret/..."
                 RESULT=$(curl -s -X POST \
@@ -111,12 +105,12 @@ spec:
                   echo "$RESULT" | jq .
                   exit 1
                 fi
-                echo "✓ KV v2 enabled at secret/"
+                echo "KV v2 enabled at secret/"
               fi
 
               # KV v2 at apps/
               if echo "$MOUNTS" | jq -e '.["apps/"]' >/dev/null 2>&1; then
-                echo "✓ KV v2 already enabled at apps/"
+                echo "KV v2 already enabled at apps/"
               else
                 echo "Enabling KV v2 at apps/..."
                 RESULT=$(curl -s -X POST \
@@ -130,12 +124,10 @@ spec:
                   echo "$RESULT" | jq .
                   exit 1
                 fi
-                echo "✓ KV v2 enabled at apps/"
+                echo "KV v2 enabled at apps/"
               fi
 
-              # ============================================
               # 4. Enable Transit Secrets Engine
-              # ============================================
               echo ""
               echo "=== Configuring Transit Secrets Engine ==="
 
@@ -143,7 +135,7 @@ spec:
               MOUNTS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/mounts)
 
               if echo "$MOUNTS" | jq -e '.["transit/"]' >/dev/null 2>&1; then
-                echo "✓ Transit engine already enabled"
+                echo "Transit engine already enabled"
               else
                 echo "Enabling Transit engine..."
                 RESULT=$(curl -s -X POST \
@@ -153,11 +145,11 @@ spec:
                   $BAO_ADDR/v1/sys/mounts/transit)
 
                 if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
-                  echo "ERROR: Failed to enable Transit engine!"
+                  echo "ERROR: Failed to enable Transit engine"
                   echo "$RESULT" | jq .
                   exit 1
                 fi
-                echo "✓ Transit engine enabled"
+                echo "Transit engine enabled"
 
                 # Create default encryption key
                 echo "Creating default encryption key..."
@@ -166,19 +158,17 @@ spec:
                   -H "Content-Type: application/json" \
                   -d '{"type":"aes256-gcm96"}' \
                   $BAO_ADDR/v1/transit/keys/default >/dev/null 2>&1 || true
-                echo "✓ Default encryption key created"
+                echo "Default encryption key created"
               fi
 
-              # ============================================
               # 5. Enable Audit Logging (optional, may fail)
-              # ============================================
               echo ""
               echo "=== Configuring Audit Logging ==="
 
               AUDITS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/audit)
 
               if echo "$AUDITS" | jq -e '.["file/"]' >/dev/null 2>&1; then
-                echo "✓ Audit logging already enabled"
+                echo "Audit logging already enabled"
               else
                 echo "Enabling file audit device..."
                 # Note: This may fail if /vault/audit doesn't exist - that's OK
@@ -189,10 +179,10 @@ spec:
                   $BAO_ADDR/v1/sys/audit/file)
 
                 if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
-                  echo "⚠ Warning: Could not enable file audit (path may not exist)"
-                  echo "  This is OK - audit can be configured later"
+                  echo "Warning: Could not enable file audit (path may not exist)"
+                  echo "This is OK - audit can be configured later"
                 else
-                  echo "✓ File audit logging enabled"
+                  echo "File audit logging enabled"
                 fi
               fi
 
@@ -209,14 +199,12 @@ spec:
                 $BAO_ADDR/v1/secret/data/demo)
 
               if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
-                echo "⚠ Warning: Could not create demo secret"
+                echo "Warning: Could not create demo secret"
               else
-                echo "✓ Demo secret created at secret/demo"
+                echo "Demo secret created at secret/demo"
               fi
 
-              # ============================================
               # 7. Final Verification
-              # ============================================
               echo ""
               echo "=== Final Verification ==="
 
@@ -225,9 +213,9 @@ spec:
               for mount in secret/ apps/ transit/; do
                 if echo "$MOUNTS" | jq -e --arg m "$mount" '.[$m]' >/dev/null 2>&1; then
                   TYPE=$(echo "$MOUNTS" | jq -r --arg m "$mount" '.[$m].type')
-                  echo "  ✓ $mount ($TYPE)"
+                  echo "$mount ($TYPE)"
                 else
-                  echo "  ✗ $mount - NOT FOUND"
+                  echo "$mount - NOT FOUND"
                 fi
               done
 
@@ -237,19 +225,17 @@ spec:
               if echo "$KEYS" | jq -e '.data.keys' >/dev/null 2>&1; then
                 echo "$KEYS" | jq -r '.data.keys[] | "  ✓ " + .'
               else
-                echo "  (no keys or transit not enabled)"
+                echo "(no keys or transit not enabled)"
               fi
 
               echo ""
-              echo "========================================="
               echo "=== OpenBao Configuration Complete! ==="
-              echo "========================================="
               echo ""
               echo "Enabled:"
-              echo "  ✓ KV v2 at secret/"
-              echo "  ✓ KV v2 at apps/"
-              echo "  ✓ Transit encryption"
+              echo "  KV v2 at secret/"
+              echo "  KV v2 at apps/"
+              echo "  Transit encryption"
               echo ""
-              echo "Your OpenBao is ready for production use!"
+              echo "Your OpenBao is ready for use!"
               
               exit 0

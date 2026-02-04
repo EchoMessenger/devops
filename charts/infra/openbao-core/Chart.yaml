@@ -1,6 +1,6 @@
 apiVersion: v2
 name: openbao-core
-description: Single-node OpenBao
+description: Single-node OpenBao with automatic initialization and configuration
 type: application
 version: 0.1.0
 appVersion: "2.0.2"
