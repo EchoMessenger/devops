@@ -1,15 +1,28 @@
-# devops
+# Devops
 
-Этот репозиторий содержит Docker Compose файлы и конфигурации для различных сервисов, относящихся к проекту.
+Источник правды (Source of truth) для развёртывания приложений
 
 ## OpenBao
 > Хранилище секретов
-1. Для всего, что указано в values.namespaces:
-  - Создаёт ServiceAccounts - определители личности (non-human accounts). В нашем случае они создаются для неймспейсов, но могут и для подов.
-  - Создаёт SecretStores - конфигурации подключения. 
-2. Создаёт AuthDelegator, который вызывается OpenBao для проверки токенов (JWT) от ServiceAccounts. AuthDelegator подтверждает валидность токена. Vault выдаёт поду свой токен.
 
-Как это работает:
+### Установка
+
+```sh
+# Go devops/charts/infra
+pwd
+
+# Install, config and unseal main app
+# Wait for all jobs to finish
+helm install openbao-core ./openbao-core -n openbao --create-namespace
+
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+# Install ClusterSecretStore
+
+```
+
+
+### Как это работает
 
 External Secrets Operator (ESO) — это «курьер» между вашим внешним хранилищем секретов (например, OpenBao, HashiCorp Vault или AWS Secrets Manager) и вашим кластером Kubernetes.
 
