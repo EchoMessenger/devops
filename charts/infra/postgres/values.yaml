@@ -14,14 +14,32 @@ storage:
   storageClassName: local-path
 
 postgres:
-  name: postgres
-  namespace: tinode
+  # Эти значения используются при генерации Secret
+  user: tinode
+  database: tinode
   dataDir: /var/lib/postgresql/data/pgdata
 
-infisical:
-  identityId: 15cd709a-c052-440d-9e68-9c4e860ddda9
-  project: echo-rvq-s
-  env: dev
-  serviceAccount:
-    name: infisical-service-account
-    namespace: default
+# Конфигурация PushSecret для OpenBao
+pushSecret:
+  enabled: true
+  secretStoreName: openbao-global
+  # Путь в OpenBao (для KV v2: secret/data/...)
+  remotePath: secret/data/tinode/postgres
+  # Использовать properties (для KV v2)
+  useProperty: true
+  # Интервал синхронизации
+  refreshInterval: "1h"
+  # None = не удалять из OpenBao при удалении PushSecret
+  # Delete = удалить из OpenBao
+  deletionPolicy: None
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+nameOverride: ""
+fullnameOverride: ""
