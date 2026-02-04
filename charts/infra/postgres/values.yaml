@@ -15,8 +15,8 @@ storage:
 
 postgres:
   # Эти значения используются при генерации Secret
-  user: tinode
-  database: tinode
+  user: postgres
+  database: postgres
   dataDir: /var/lib/postgresql/data/pgdata
 
 # Конфигурация PushSecret для OpenBao
