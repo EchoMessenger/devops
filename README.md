@@ -17,7 +17,15 @@ helm install openbao-core ./openbao-core -n openbao --create-namespace
 
 helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
+
+# Install ESO
+helm install external-secrets \
+  external-secrets/external-secrets \
+  -n external-secrets \
+  --create-namespace
+
 # Install ClusterSecretStore
+helm install openbao-secretstore ./openbao-secretstore -n external-secrets
 
 ```
 

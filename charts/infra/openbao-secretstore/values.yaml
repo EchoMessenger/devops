@@ -32,6 +32,12 @@ openbao:
   # Example: `kubectl get secret openbao-tls -n openbao -o jsonpath='{.data.ca\.crt}'`
   caBundle: ""
 
+  serviceAccount:
+    # -- ServiceAccount name that ESO uses (must match role's bound_service_account_names)
+    name: "external-secrets"
+    # -- Namespace where ESO is deployed (must match role's bound_service_account_namespaces)
+    namespace: "external-secrets"
+
 # ClusterSecretStore metadata configuration
 clusterSecretStore:
   # -- Name of the ClusterSecretStore resource
