@@ -1,0 +1,38 @@
+replicaCount: 1
+
+image:
+  repository: postgres
+  tag: "16"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5432
+
+storage:
+  size: 10Gi
+  storageClassName: local-path
+
+postgres:
+  user: postgres
+  database: postgres
+  dataDir: /var/lib/postgresql/data/pgdata
+
+pushSecret:
+  enabled: true
+  secretStoreName: openbao-global
+  remotePath: tinode/postgres
+  useProperty: true
+  refreshInterval: "1h"
+  deletionPolicy: None
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+nameOverride: ""
+fullnameOverride: ""

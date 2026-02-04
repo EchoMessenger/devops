@@ -1,6 +1,6 @@
 apiVersion: v2
 name: postgres
-description: PostgreSQL for Tinode with Infisical secrets
+description: PostgreSQL for Tinode
 type: application
 version: 0.1.0
 appVersion: "16"
