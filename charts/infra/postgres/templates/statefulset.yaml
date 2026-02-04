@@ -27,7 +27,6 @@ spec:
           ports:
             - containerPort: 5432
               name: postgres
-          # Используем сгенерированный Secret
           envFrom:
             - secretRef:
                 name: {{ include "postgres.fullname" . }}-credentials
@@ -58,4 +57,4 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ include "postgres.fullname" . }}-pvc
+            claimName: {{ include "postgres.fullname" . }}-data

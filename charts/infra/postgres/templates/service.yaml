@@ -1,12 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
-  namespace: tinode
+  name: {{ include "postgres.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: postgres
+    {{- include "postgres.selectorLabels" . | nindent 4 }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 5432

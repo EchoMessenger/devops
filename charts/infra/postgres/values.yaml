@@ -14,23 +14,16 @@ storage:
   storageClassName: local-path
 
 postgres:
-  # Эти значения используются при генерации Secret
   user: postgres
   database: postgres
   dataDir: /var/lib/postgresql/data/pgdata
 
-# Конфигурация PushSecret для OpenBao
 pushSecret:
   enabled: true
   secretStoreName: openbao-global
-  # Путь в OpenBao (для KV v2: secret/data/...)
   remotePath: tinode/postgres
-  # Использовать properties (для KV v2)
   useProperty: true
-  # Интервал синхронизации
   refreshInterval: "1h"
-  # None = не удалять из OpenBao при удалении PushSecret
-  # Delete = удалить из OpenBao
   deletionPolicy: None
 
 resources:
