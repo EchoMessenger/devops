@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "openbao.fullname" . }}-auth-delegator
+  name: {{ .Values.service.name | default (include "openbao.fullname" .) }}-auth-delegator
   labels:
     app.kubernetes.io/name: {{ include "openbao.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}

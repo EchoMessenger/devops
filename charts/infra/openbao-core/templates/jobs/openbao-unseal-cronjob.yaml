@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "openbao.fullname" . }}-unseal-cron
+  name: {{ .Values.service.name | default (include "openbao.fullname" .) }}-unseal-cron
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "openbao.name" . }}

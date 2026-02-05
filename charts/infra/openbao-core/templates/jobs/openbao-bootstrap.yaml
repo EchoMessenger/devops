@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "openbao.fullname" . }}-bootstrap
+  name: {{ .Values.service.name | default (include "openbao.fullname" .) }}-bootstrap
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "openbao.name" . }}

@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "openbao.fullname" . }}
+  name: {{ .Values.service.name | default (include "openbao.fullname" .) }}
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: {{ include "openbao.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
-  serviceName: {{ include "openbao.fullname" . }}-internal
+  serviceName: {{ .Values.service.name | default (include "openbao.fullname" .) }}-internal
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
@@ -64,7 +64,7 @@ spec:
             - name: BAO_API_ADDR
               value: "http://$(POD_IP):{{ .Values.service.port }}"
             - name: BAO_CLUSTER_ADDR
-              value: "http://$(HOSTNAME).{{ include "openbao.fullname" . }}-internal:{{ .Values.service.clusterPort }}"
+              value: "http://$(HOSTNAME).{{ .Values.service.name | default (include "openbao.fullname" .) }}-internal:{{ .Values.service.clusterPort }}"
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -96,7 +96,7 @@ spec:
         # ConfigMap source (RO)
         - name: config-src
           configMap:
-            name: {{ include "openbao.fullname" . }}-config
+            name: {{ .Values.service.name | default (include "openbao.fullname" .) }}-config
 
         # RW config dir
         - name: config

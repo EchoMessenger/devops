@@ -30,6 +30,9 @@ service:
   # -- Kubernetes service type
   type: ClusterIP
 
+  # -- Kubernetes service name
+  name: openbao
+
   # -- Main OpenBao API port
   port: 8200
 
