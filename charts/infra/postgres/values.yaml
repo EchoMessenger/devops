@@ -1,38 +1,71 @@
+# -- Number of PostgreSQL replicas (StatefulSet)
+# @default -- 1
 replicaCount: 1
 
+# @section Image configuration
 image:
+  # -- PostgreSQL image repository
   repository: postgres
+  # -- PostgreSQL image tag
   tag: "16"
+  # -- Image pull policy
   pullPolicy: IfNotPresent
 
+# @section Service configuration
 service:
+  # -- Kubernetes service type
   type: ClusterIP
+  # -- PostgreSQL service port
   port: 5432
 
+# @section Storage configuration
 storage:
+  # -- PersistentVolumeClaim size
   size: 10Gi
+  # -- StorageClass name for PVC
   storageClassName: local-path
 
+# @section PostgreSQL configuration
 postgres:
+  # -- PostgreSQL superuser name
   user: postgres
+  # -- Default database name
   database: postgres
+  # -- Data directory path inside the container
   dataDir: /var/lib/postgresql/data/pgdata
 
+# @section External Secrets (PushSecret) configuration
 pushSecret:
+  # -- Enable PushSecret to sync credentials to external secret store
   enabled: true
+  # -- Name of the ClusterSecretStore to push secrets to
   secretStoreName: openbao-global
+  # -- Remote path in the secret store (e.g., OpenBao/Vault path)
   remotePath: tinode/postgres
+  # -- Use property-based secret structure
   useProperty: true
+  # -- How often to sync secrets to the remote store
   refreshInterval: "1h"
+  # -- Deletion policy when PushSecret is removed (None, Delete)
   deletionPolicy: None
 
+# @section Resource management
 resources:
+  # -- Resource requests
   requests:
+    # -- Memory request
     memory: "256Mi"
+    # -- CPU request
     cpu: "250m"
+  # -- Resource limits
   limits:
+    # -- Memory limit
     memory: "1Gi"
+    # -- CPU limit
     cpu: "1000m"
 
+# @section Name overrides
+# -- Override the chart name
 nameOverride: ""
+# -- Override the full release name
 fullnameOverride: ""

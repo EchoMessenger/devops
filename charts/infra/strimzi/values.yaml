@@ -1,13 +1,35 @@
 kafka:
+  # -- Name of the Kafka cluster custom resource
   name: kafka
+  # -- Namespace where the Kafka cluster is deployed
   namespace: kafka
-  version: 4.1.1
+  # -- Version of Kafka to install
+  version: "4.1.1"
+  # -- Number of Kafka broker replicas (in the NodePool)
+  replicas: 1
+  # -- Kafka broker configuration properties (server.properties)
+  config:
+    # -- Default replication factor for automatically created topics
+    defaultReplicationFactor: 1
+    # -- Replication factor for the internal __consumer_offsets topic
+    offsetsTopicReplicationFactor: 1
+    # -- Replication factor for the transaction state log
+    transactionStateLogReplicationFactor: 1
+    # -- Minimum ISR for the transaction state log
+    transactionStateLogMinIsr: 1
+    # -- Minimum number of in-sync replicas required for a write to be considered successful
+    minInsyncReplicas: 1
 
 storage:
+  # -- Storage type (e.g., 'ephemeral', 'persistent-claim', 'jbod')
   type: persistent-claim
+  # -- Size of the persistent volume claim per broker
   size: 8Gi
-  deleteClaim: true
+  # -- Determines if the PVCs should be deleted when the cluster is uninstalled.
+  # @default false (Recommended 'false' for production to prevent data loss)
+  deleteClaim: false
 
+# -- List of KafkaTopic resources to create
 topics:
   - name: tinode.ctrl
     partitions: 1
@@ -41,15 +63,57 @@ topics:
     replicas: 1
 
 user:
+  # -- Name of the KafkaUser resource
   name: user
+  # -- Name of the Kubernetes Secret where user credentials will be stored
   secretName: kafka-user
+  # -- Key in the secret containing the password
   passwordKey: password
+  # -- Authentication configuration for the user
+  authentication:
+    # -- Authentication mechanism (e.g., scram-sha-512, tls)
+    type: scram-sha-512
+  # -- Additional labels for the KafkaUser resource
+  labels: {}
+  # -- Access Control Lists (ACLs) for the user
+  acls: []
+
+pushSecret:
+  # -- Enable creation of PushSecret resource to sync secrets to external store
+  enabled: true
+  # -- Name of the PushSecret resource
+  name: kafka-user-push
+  # -- Interval for refreshing the secret status
+  refreshInterval: 1h
+  # -- Policy for secret deletion in the external store
+  deletionPolicy: Delete
+  # -- Policy for updating secrets (Replace or Merge)
+  updatePolicy: Replace
+  # -- Reference to the SecretStore or ClusterSecretStore
+  secretStore:
+    name: openbao-global
+    kind: ClusterSecretStore
+  # -- Mapping of Kubernetes secret keys to remote external store keys
+  data:
+    - secretKey: password
+      remoteKey: kafka/user
+      property: password
+    - secretKey: sasl.jaas.config
+      remoteKey: kafka/user
+      property: sasl_jaas_config
 
 openbao:
+  # -- Enable OpenBao integration settings
   enabled: true
+  # -- URL of the OpenBao server
   server: http://openbao.openbao.svc.cluster.local:8200
+  # -- Path for the secret engine
   path: secret
+  # -- Auth role for Kubernetes authentication in OpenBao
   role: kafka
+  # -- ServiceAccount name used for authentication
   serviceAccount: kafka-sa
+  # -- Specific path where Kafka secrets are stored
   secretsPath: secret/kafka
+  # -- Interval for resynchronizing secrets
   resyncInterval: 10s

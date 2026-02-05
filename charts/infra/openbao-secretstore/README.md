@@ -15,6 +15,8 @@ ClusterSecretStore for OpenBao (External Secrets Operator)
 | openbao.path | string | `"secret"` | Path to the secret engine in OpenBao (e.g., "secret", "kv") This is the mount path where your secrets are stored |
 | openbao.role | string | `"eso"` | Kubernetes auth role name in OpenBao This role must be created in OpenBao before deploying this chart: `bao write auth/kubernetes/role/<role-name> ...` |
 | openbao.server | string | "http://openbao.openbao.svc.cluster.local:8200" | OpenBao server URL. Must be accessible from the cluster. Format: http(s)://<service-name>.<namespace>.svc.cluster.local:<port> |
+| openbao.serviceAccount.name | string | `"external-secrets"` | ServiceAccount name that ESO uses (must match role's bound_service_account_names) |
+| openbao.serviceAccount.namespace | string | `"external-secrets"` | Namespace where ESO is deployed (must match role's bound_service_account_namespaces) |
 | openbao.version | string | `"v2"` | KV Secrets Engine version ("v1" or "v2") v2 provides versioning and metadata support |
 
 ----------------------------------------------

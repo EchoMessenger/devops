@@ -32,6 +32,7 @@ Single-node OpenBao with automatic initialization and configuration
 | replicaCount | int | `1` | Number of OpenBao replicas to run |
 | resources | object | `{}` | Pod resource requests and limits |
 | service.clusterPort | int | `8201` | Cluster communication port (HA / internal) |
+| service.name | string | `"openbao"` | Kubernetes service name |
 | service.port | int | `8200` | Main OpenBao API port |
 | service.type | string | `"ClusterIP"` | Kubernetes service type |
 | serviceAccount.create | bool | `true` | Create a dedicated ServiceAccount for OpenBao |
