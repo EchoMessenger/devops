@@ -140,7 +140,7 @@ kubectl get kafkatopic -n kafka
 kubectl get kafkauser -n kafka
 
 # Check PushSecret
-kubectl describe pushsecret kafka-router-push -n kafka
+kubectl describe pushsecret kafka-user-push -n kafka
 
 # Check that secret is in OpenBao
 ROOT_TOKEN=$(kubectl get secret openbao-bootstrap -n openbao -o jsonpath='{.data.root-token}' | base64 -d)
@@ -202,7 +202,7 @@ curl -s -H 'X-Vault-Token: $ROOT_TOKEN' \
 
 - Клиенты подключаются через сервис kafka-kafka-bootstrap на портах 9092 (plain) или 9093 (TLS)
 - Entity Operator взаимодействует с Kafka через внутренний API для управления ресурсами
-- External Secrets Operator подключается к OpenBao по HTTPS с аутентификацией через Kubernetes ServiceAccount
+- External Secrets Operator подключается к OpenBao по HTTP с аутентификацией через Kubernetes ServiceAccount
 
 ##### Аутентификация:
 

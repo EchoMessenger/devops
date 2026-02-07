@@ -80,7 +80,7 @@ user:
 
 pushSecret:
   # -- Enable creation of PushSecret resource to sync secrets to external store
-  # -- @default true (If true, be shure that ClusterSecretStore is properly configured and accessible before installing the chart)
+  # -- @default true (If true, be sure that ClusterSecretStore is properly configured and accessible before installing the chart)
   enabled: true
   # -- Name of the PushSecret resource
   name: kafka-user-push
