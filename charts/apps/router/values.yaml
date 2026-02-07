@@ -10,7 +10,7 @@ service:
   healthPort: 8090
 
 kafka:
-  brokers: kafka-kafka-bootstrap:9092
+  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
   clientId: router
   topicPrefix: tinode
   sasl:
