@@ -10,9 +10,16 @@ service:
   healthPort: 8090
 
 kafka:
-  brokers: kafka-kafka-bootstrap:9092
+  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
   clientId: router
   topicPrefix: tinode
+  sasl:
+    enabled: true
+    mechanism: SCRAM-SHA-512
+    username: "user"
+  tls:
+    enabled: false
+    insecureSkipVerify: false
 
 log:
   level: debug
@@ -22,5 +29,5 @@ openbao:
   path: "secret"
   role: "router"
   serviceAccount: "router-sa"
-  secretsPath: "secret/kafka"
+  secretsPath: "kafka"
   resyncInterval: "10s"

@@ -26,41 +26,8 @@ spec:
                 name: {{ include "router.fullname" . }}
 
           env:
-            # Kafka SASL
-            - name: KAFKA_SASL_ENABLE
-              valueFrom:
-                secretKeyRef:
-                  name: router-kafka-sasl
-                  key: ENABLE
-
-            - name: KAFKA_SASL_MECHANISM
-              valueFrom:
-                secretKeyRef:
-                  name: router-kafka-sasl
-                  key: MECHANISM
-
-            - name: KAFKA_SASL_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: router-kafka-user
-                  key: username
-                  optional: true
-
             - name: KAFKA_SASL_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: router-kafka-user
                   key: password
-
-            # Kafka TLS
-            - name: KAFKA_TLS_ENABLE
-              valueFrom:
-                secretKeyRef:
-                  name: router-kafka-tls
-                  key: ENABLE
-
-            - name: KAFKA_TLS_INSECURE_SKIP_VERIFY
-              valueFrom:
-                secretKeyRef:
-                  name: router-kafka-tls
-                  key: INSECURE_SKIP_VERIFY
