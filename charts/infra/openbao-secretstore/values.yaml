@@ -1,11 +1,46 @@
+# OpenBao configuration for ClusterSecretStore integration
 openbao:
+  # -- Enable OpenBao ClusterSecretStore creation
   enabled: true
+  
+  # -- OpenBao server URL. Must be accessible from the cluster.
+  # Format: http(s)://<service-name>.<namespace>.svc.cluster.local:<port>
+  # @default -- "http://openbao.openbao.svc.cluster.local:8200"
   server: "http://openbao.openbao.svc.cluster.local:8200"
+  
+  # -- Path to the secret engine in OpenBao (e.g., "secret", "kv")
+  # This is the mount path where your secrets are stored
   path: "secret"
+  
+  # -- KV Secrets Engine version ("v1" or "v2")
+  # v2 provides versioning and metadata support
   version: "v2"
+  
+  # -- Kubernetes auth mount path in OpenBao
+  # Must match the path configured in OpenBao: `bao auth enable -path=<path> kubernetes`
+  # @default -- "kubernetes"
   kubernetesAuthMount: "kubernetes"
+  
+  # -- Kubernetes auth role name in OpenBao
+  # This role must be created in OpenBao before deploying this chart:
+  # `bao write auth/kubernetes/role/<role-name> ...`
   role: "eso"
+  
+  # -- (string) Base64-encoded CA certificate bundle for TLS verification
+  # Required only when using self-signed certificates or internal CA
+  # Leave empty for public CAs or HTTP connections
+  # Example: `kubectl get secret openbao-tls -n openbao -o jsonpath='{.data.ca\.crt}'`
   caBundle: ""
 
+  serviceAccount:
+    # -- ServiceAccount name that ESO uses (must match role's bound_service_account_names)
+    name: "external-secrets"
+    # -- Namespace where ESO is deployed (must match role's bound_service_account_namespaces)
+    namespace: "external-secrets"
+
+# ClusterSecretStore metadata configuration
 clusterSecretStore:
+  # -- Name of the ClusterSecretStore resource
+  # This name will be referenced in ExternalSecret resources across all namespaces
+  # Example usage: `secretStoreRef.name: openbao-global`
   name: openbao-global

@@ -1,58 +1,139 @@
+# @section Global settings
+
+# -- Number of OpenBao replicas to run
 replicaCount: 1
 
 image:
+  # -- OpenBao image repository
   repository: quay.io/openbao/openbao
+
+  # -- OpenBao image tag
   tag: "2.0.2"
+
+  # -- Image pull policy
   pullPolicy: IfNotPresent
 
+
+# @section Service account
+
 serviceAccount:
+  # -- Create a dedicated ServiceAccount for OpenBao
   create: true
+
+  # -- Name of the ServiceAccount to use
   name: openbao
 
+
+# @section Service configuration
+
 service:
+  # -- Kubernetes service type
   type: ClusterIP
+
+  # -- Kubernetes service name
+  name: openbao
+
+  # -- Main OpenBao API port
   port: 8200
+
+  # -- Cluster communication port (HA / internal)
   clusterPort: 8201
 
+
+# @section Persistent storage
+
 storage:
+  # -- PersistentVolume size
   size: 1Gi
+
+  # -- StorageClass name for the PersistentVolume
   storageClass: local-path
+
+  # -- Filesystem path inside the container for data storage
   path: /openbao/data
 
+
+# @section Resource management
+
+# -- Pod resource requests and limits
 resources: {}
 
+
+# @section OpenBao configuration
+
 config:
+  # -- Enable automatic OpenBao configuration via Helm
   enabled: true
+
+  # -- Disable mlock (required for most containerized environments)
   disable_mlock: true
+
+  # -- Enable OpenBao Web UI
   ui: true
-  
-  # Secrets engines to enable
+
+
+  # @section Secrets engines
+
+  # -- Secrets engines configuration
   secretsEngines:
     kv:
+      # -- Enable KV secrets engine
       enabled: true
+
+      # -- KV mount paths to create
       paths:
         - secret
         - apps
-    
+
     transit:
+      # -- Enable Transit secrets engine
       enabled: true
+
+      # -- Create a default transit key
       createDefaultKey: true
-    
-  # Audit logging
+
+
+  # @section Audit logging
+
   audit:
+    # -- Enable audit logging
     enabled: true
+
+    # -- Audit backend type
     type: file
-    path: /vault/audit/audit.log
-  
-  # Sample data
+
+    # -- Path to audit log file inside the pod
+    path: /openbao/data/audit/audit.log
+
+
+  # @section Demo data
+
+  # -- Create a demo secret for testing purposes
   createDemoSecret: false
 
+
+# @section Kubernetes auth
+
 authDelegator:
+  # -- Enable ClusterRoleBinding for Kubernetes auth delegation
   enabled: true
 
+
+# @section External OpenBao access
+
 openbao:
+  # -- Enable OpenBao client integration (for init jobs, ESO, etc.)
   enabled: true
+
+  # -- OpenBao server address
+  # Format: http(s)://<service-name>:<port>
   server: http://openbao:8200
+
+  # -- Base path for KV secrets
   path: secret
+
+  # -- KV secrets engine version
   version: v2
+
+  # -- Kubernetes auth mount path in OpenBao
   kubernetesAuthMount: kubernetes

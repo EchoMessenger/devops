@@ -1,10 +1,19 @@
 apiVersion: kafka.strimzi.io/v1
 kind: KafkaUser
 metadata:
-  name: user
-  namespace: kafka
+  name: {{ .Values.user.name }}
+  namespace: {{ .Values.kafka.namespace }}
   labels:
-    strimzi.io/cluster: kafka
+    strimzi.io/cluster: {{ .Values.kafka.name }}
+    {{- with .Values.user.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   authentication:
-    type: scram-sha-512
+    type: {{ .Values.user.authentication.type }}
+  {{- if .Values.user.acls }}
+  authorization:
+    type: simple
+    acls:
+      {{- toYaml .Values.user.acls | nindent 6 }}
+  {{- end }}

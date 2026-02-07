@@ -1,13 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: openbao-internal
+  name: {{ .Values.service.name | default (include "openbao.fullname" .) }}-internal
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "openbao.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   clusterIP: None
   ports:
     - name: api
-      port: 8200
+      port: {{ .Values.service.port }}
+      targetPort: api
     - name: cluster
-      port: 8201
+      port: {{ .Values.service.clusterPort }}
+      targetPort: cluster
   selector:
-    app: openbao
+    app.kubernetes.io/name: {{ include "openbao.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
