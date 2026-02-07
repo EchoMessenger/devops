@@ -6,7 +6,6 @@ metadata:
 spec:
   kafka:
     version: {{ .Values.kafka.version | quote }}
-    replicas: {{ .Values.kafka.replicas }}
     listeners:
       - name: plain
         port: 9092

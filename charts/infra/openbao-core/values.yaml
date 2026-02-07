@@ -103,7 +103,7 @@ config:
     type: file
 
     # -- Path to audit log file inside the pod
-    path: /vault/audit/audit.log
+    path: /openbao/data/audit/audit.log
 
 
   # @section Demo data
