@@ -19,31 +19,40 @@ spec:
         - name: keygen
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          env:
+            - name: VAULT_ADDR
+              value: {{ .Values.openbao.address | quote }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openbao-bootstrap
+                  key: root-token
+
           command:
             - /bin/sh
             - -ec
             - |
-              echo "Getting OpenBao root token..."
+              echo "Running keygen..."
+              OUTPUT="$(/entrypoint.sh || true)"
 
-              ROOT_TOKEN=$(kubectl get secret openbao-bootstrap \
-                -n {{ .Release.Namespace }} \
-                -o jsonpath='{.data.root-token}' | base64 -d)
+              if [ -z "$OUTPUT" ]; then
+                echo "ERROR: keygen returned empty output"
+                exit 1
+              fi
 
-              export VAULT_ADDR="http://openbao:8200"
-              export VAULT_TOKEN="$ROOT_TOKEN"
-
-              echo "Generating keys..."
-              OUTPUT=$(./keygen || cat /output.json)
+              echo "Keygen output: $OUTPUT"
 
               API_KEY=$(echo "$OUTPUT" | jq -r '.api_key')
               HMAC_SALT=$(echo "$OUTPUT" | jq -r '.hmac_salt')
 
-              if [ -z "$API_KEY" ] || [ -z "$HMAC_SALT" ]; then
-                echo "ERROR: keygen output invalid"
+              if [ "$API_KEY" = "null" ] || [ "$HMAC_SALT" = "null" ]; then
+                echo "ERROR: invalid JSON from keygen"
                 exit 1
               fi
 
               echo "Writing secrets to OpenBao..."
+
               curl -sSf \
                 -H "X-Vault-Token: $VAULT_TOKEN" \
                 -H "Content-Type: application/json" \
@@ -58,5 +67,5 @@ spec:
               }
               EOF
 
-              echo "Secrets successfully stored in OpenBao"
+              echo "Secrets stored successfully"
 {{- end }}
