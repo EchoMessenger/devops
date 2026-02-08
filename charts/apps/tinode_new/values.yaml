@@ -149,7 +149,7 @@ accountGc:
   enabled: false
 
 # Дефолтный код страны
-defaultCountryCode: "US"
+defaultCountryCode: "RU"
 
 # Путь для статуса сервера
 serverStatusPath: ""
@@ -207,7 +207,7 @@ affinity: {}
 
 # ServiceAccount
 serviceAccount:
-  create: true
+  create: false
   annotations: {}
   name: ""
 
