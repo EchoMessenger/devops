@@ -1,0 +1,50 @@
+# Default values for keygen
+image:
+  registry: ghcr.io
+  repository: echomessenger/keygen
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+# API Key generation parameters
+apikey:
+  sequence: 1
+  isRoot: 0
+  salt: ""  # Leave empty to auto-generate
+
+# OpenBao configuration
+openbao:
+  # -- Enable OpenBao client integration (for init jobs, ESO, etc.)
+  enabled: true
+
+  # -- OpenBao server address
+  # Format: http(s)://<service-name>:<port>
+  address: http://openbao:8200
+
+  kv:
+    mount: secret
+    path: keygen
+  
+# Job configuration
+keygenJob:
+  enabled: true
+
+  # Helm hook configuration
+  hook:
+    weight: 30
+    deletePolicy: before-hook-creation,hook-succeeded
+
+  backoffLimit: 3
+
+  # Name of secret where OpenBao root token is stored
+  rootTokenSecret:
+    name: openbao-bootstrap
+    key: root-token
+
+  # Timeout ожидания root-token (на случай race condition)
+  wait:
+    enabled: true
+    maxSeconds: 60
+    intervalSeconds: 5

@@ -1,0 +1,62 @@
+{{- if .Values.openbao.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "keygen.fullname" . }}-to-openbao
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "30"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: keygen
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              echo "Getting OpenBao root token..."
+
+              ROOT_TOKEN=$(kubectl get secret openbao-bootstrap \
+                -n {{ .Release.Namespace }} \
+                -o jsonpath='{.data.root-token}' | base64 -d)
+
+              export VAULT_ADDR="http://openbao:8200"
+              export VAULT_TOKEN="$ROOT_TOKEN"
+
+              echo "Generating keys..."
+              OUTPUT=$(./keygen || cat /output.json)
+
+              API_KEY=$(echo "$OUTPUT" | jq -r '.api_key')
+              HMAC_SALT=$(echo "$OUTPUT" | jq -r '.hmac_salt')
+
+              if [ -z "$API_KEY" ] || [ -z "$HMAC_SALT" ]; then
+                echo "ERROR: keygen output invalid"
+                exit 1
+              fi
+
+              echo "Writing secrets to OpenBao..."
+              curl -sSf \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -X POST \
+                $VAULT_ADDR/v1/secret/data/keygen \
+                -d @- <<EOF
+              {
+                "data": {
+                  "api_key": "$API_KEY",
+                  "hmac_salt": "$HMAC_SALT"
+                }
+              }
+              EOF
+
+              echo "Secrets successfully stored in OpenBao"
+{{- end }}
