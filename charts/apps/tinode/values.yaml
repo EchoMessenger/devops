@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: tinode/tinode
+  repository: tinode/tinode-postgres
   tag: 0.25.1
   pullPolicy: Always
 
