@@ -225,3 +225,7 @@ kubectl logs postgres-0 -n tinode
 # Check PostgreSQL functionality
 kubectl exec -it -n tinode postgres-0 -- psql -U postgres -d postgres -c "\l"
 ```
+
+## Tinode
+
+**TODO**

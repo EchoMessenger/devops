@@ -13,8 +13,8 @@ spec:
       labels:
         app: tinode
     spec:
-      # imagePullSecrets:
-      #   - name: ghcr-secret
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: tinode
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -26,7 +26,7 @@ spec:
                 name: tinode-secret
           volumeMounts:
             - name: config
-              mountPath: /tinode.conf
+              mountPath: /opt/tinode/config.template
               subPath: tinode.conf
             - name: uploads
               mountPath: /app/uploads

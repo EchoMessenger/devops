@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: tinode/tinode-postgres
-  tag: 0.25.1
+  repository: ghcr.io/echomessenger/tinode-server
+  tag: latest-amd64
   pullPolicy: Always
 
 service:
