@@ -15,11 +15,33 @@ spec:
       restartPolicy: OnFailure
       imagePullSecrets:
         - name: ghcr-secret
-      containers:
+
+      volumes:
+        - name: keygen-output
+          emptyDir: {}
+
+      initContainers:
         - name: keygen
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: keygen-output
+              mountPath: /out
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              echo "Running keygen..."
+              /usr/local/bin/keygen > /out/keys.json
+              echo "Keygen output:"
+              cat /out/keys.json
 
+      containers:
+        - name: openbao-writer
+          image: alpine:3.19
+          volumeMounts:
+            - name: keygen-output
+              mountPath: /out
           env:
             - name: VAULT_ADDR
               value: {{ .Values.openbao.address | quote }}
@@ -28,26 +50,17 @@ spec:
                 secretKeyRef:
                   name: openbao-bootstrap
                   key: root-token
-
           command:
             - /bin/sh
             - -ec
             - |
-              echo "Running keygen..."
-              OUTPUT="$(/entrypoint.sh || true)"
+              apk add --no-cache curl jq
 
-              if [ -z "$OUTPUT" ]; then
-                echo "ERROR: keygen returned empty output"
-                exit 1
-              fi
+              API_KEY=$(jq -r '.api_key' /out/keys.json)
+              HMAC_SALT=$(jq -r '.hmac_salt' /out/keys.json)
 
-              echo "Keygen output: $OUTPUT"
-
-              API_KEY=$(echo "$OUTPUT" | jq -r '.api_key')
-              HMAC_SALT=$(echo "$OUTPUT" | jq -r '.hmac_salt')
-
-              if [ "$API_KEY" = "null" ] || [ "$HMAC_SALT" = "null" ]; then
-                echo "ERROR: invalid JSON from keygen"
+              if [ -z "$API_KEY" ] || [ "$HMAC_SALT" = "null" ]; then
+                echo "ERROR: invalid keygen output"
                 exit 1
               fi
 
@@ -67,5 +80,5 @@ spec:
               }
               EOF
 
-              echo "Secrets stored successfully"
+              echo "Secrets successfully stored in OpenBao"
 {{- end }}
