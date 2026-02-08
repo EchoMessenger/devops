@@ -18,6 +18,7 @@ spec:
       containers:
         - name: tinode
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["sleep", "3600"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 6060
