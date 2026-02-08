@@ -70,7 +70,7 @@ spec:
                 -H "X-Vault-Token: $VAULT_TOKEN" \
                 -H "Content-Type: application/json" \
                 -X POST \
-                $VAULT_ADDR/v1/secret/data/keygen \
+                $VAULT_ADDR/v1/secret/data/tinode/keygen \
                 -d @- <<EOF
               {
                 "data": {
