@@ -48,7 +48,7 @@ data:
             "Host": "{{ .Values.postgres.host }}",
             "Port": "{{ .Values.postgres.port }}",
             "DBName": "${POSTGRES_DB}",
-            "SSLMode": "{{ .Values.postgres.sslMode }}"
+            "SSLMode": "{{ .Values.postgres.sslMode }}",
             "max_open_conns": 50,
             "max_idle_conns": 50,
             "conn_max_lifetime": 60,
@@ -63,7 +63,7 @@ data:
           "name":"stdout",
           "config": {
             // Disabled.
-            "enabled": false
+            "enabled": true
           }
         }
       ],

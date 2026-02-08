@@ -4,7 +4,8 @@ metadata:
   name: tinode-uploads-pvc
   namespace: tinode
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes: 
+    - {{ .Values.storage.accessMode }}
   storageClassName: {{ .Values.storage.storageClassName }}
   resources:
     requests:

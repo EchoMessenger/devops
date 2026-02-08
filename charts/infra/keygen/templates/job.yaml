@@ -75,7 +75,9 @@ spec:
               {
                 "data": {
                   "api_key": "$API_KEY",
-                  "hmac_salt": "$HMAC_SALT"
+                  "hmac_salt": "$HMAC_SALT",
+                  "uid_key": "$(head -c 16 /dev/urandom | base64 | tr -d '\n')",
+                  "token_key": "$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
                 }
               }
               EOF
