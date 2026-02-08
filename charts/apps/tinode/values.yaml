@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/echomessenger/tinode-server
-  tag: latest-amd64
+  repository: tinode/tinode
+  tag: 0.25.1
   pullPolicy: Always
 
 service:

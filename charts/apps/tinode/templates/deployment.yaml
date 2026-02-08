@@ -13,8 +13,8 @@ spec:
       labels:
         app: tinode
     spec:
-      imagePullSecrets:
-        - name: ghcr-secret
+      # imagePullSecrets:
+      #   - name: ghcr-secret
       containers:
         - name: tinode
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
