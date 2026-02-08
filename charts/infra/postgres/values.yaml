@@ -31,6 +31,8 @@ postgres:
   user: postgres
   # -- Default database name
   database: postgres
+  # --Tinode database name
+  tinodeDatabase: tinode
   # -- Data directory path inside the container
   dataDir: /var/lib/postgresql/data/pgdata
 
