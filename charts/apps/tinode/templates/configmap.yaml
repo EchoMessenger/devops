@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tinode-config
-  namespace: tinode
+  namespace: {{ .Release.Namespace }}
 data:
   tinode.conf: |
     {
@@ -59,10 +59,8 @@ data:
 
       "push": [
         {
-          // Notificator which writes to STDOUT. Useful for debugging.
-          "name":"stdout",
+          "name": "stdout",
           "config": {
-            // Disabled.
             "enabled": true
           }
         }
@@ -82,28 +80,14 @@ data:
 
       "plugins": [
         {
-          // Enable or disable this plugin.
           "enabled": true,
-
-          // Name of the plugin, must be unique.
           "name": "router",
-
-          // Timeout in microseconds.
           "timeout": 20000,
-
-          // Events to send to the plugin.
           "filters": {
-            // Account creation events.
             "account": "C"
           },
-
-          // Error code to use in case plugin has failed; 0 means to ignore the failures.
           "failure_code": 0,
-
-          // Text of an error message to report in case of plugin failure.
           "failure_text": "ERR | router | Router has failed. Continuing...",
-
-          // Address of the plugin.
           "service_addr": "tcp://localhost:7911"
         }
       ]
@@ -113,12 +97,12 @@ data:
     set -e
 
     echo "Waiting for PostgreSQL to start..."
-    until pg_isready -h postgres -p 5432 -U "$POSTGRES_USER"; do
+    until pg_isready -h {{ .Values.postgres.host }} -p {{ .Values.postgres.port }} -U "$POSTGRES_USER"; do
       sleep 1
     done
 
     echo "Checking if database exists and is initialized..."
-    if ! psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1 FROM kvmeta WHERE key='version';" >/dev/null 2>&1; then
+    if ! psql -h {{ .Values.postgres.host }} -p {{ .Values.postgres.port }} -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1 FROM kvmeta WHERE key='version';" >/dev/null 2>&1; then
       echo "Database not initialized. Creating schema..."
       /app/tinode -config=/tinode.conf -data=/app/tinode-static/data.json -reset=true
     fi

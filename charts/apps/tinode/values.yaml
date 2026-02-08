@@ -12,7 +12,7 @@ service:
 storage:
   storageClassName: nfs-client
   size: 10Gi
-  accessMode: ReadWriteMany  # если replicaCount > 1
+  accessMode: ReadWriteMany
 
 resources:
   limits:
@@ -35,13 +35,5 @@ ingress:
     enabled: false
     secretName: tinode-tls
 
-# OpenBao configuration
 openbao:
-  # -- Enable OpenBao client integration (for init jobs, ESO, etc.)
   enabled: true
-
-  # -- OpenBao server address
-  # Format: http(s)://<service-name>:<port>
-  address: http://openbao:8200
-
-
