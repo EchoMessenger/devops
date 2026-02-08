@@ -4,7 +4,7 @@ metadata:
   name: tinode-config
   namespace: {{ .Release.Namespace }}
 data:
-  tinode.conf: |
+  config.template: |
     {
       "listen": ":6060",
       "api_path": "/",

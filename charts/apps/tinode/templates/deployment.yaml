@@ -18,7 +18,6 @@ spec:
       containers:
         - name: tinode
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          command: ["sleep", "3600"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 6060
@@ -28,7 +27,7 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /opt/tinode/config.template
-              subPath: tinode.conf
+              subPath: config.template
             - name: uploads
               mountPath: /app/uploads
           resources:
