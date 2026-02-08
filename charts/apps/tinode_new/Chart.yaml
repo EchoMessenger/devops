@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tinode
+description: A Helm chart for Tinode chat server
+type: application
+version: 0.1.0
+appVersion: "0.24.7"
