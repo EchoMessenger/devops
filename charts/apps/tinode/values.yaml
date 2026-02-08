@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: ghcr.io/echomessenger/tinode-server
@@ -10,7 +10,7 @@ service:
   port: 6060
 
 storage:
-  storageClassName: nfs-client
+  storageClassName: local-path
   size: 10Gi
   accessMode: ReadWriteMany
 
