@@ -8,7 +8,7 @@ spec:
   containers:
     - name: reader
       image: busybox
-      command: ["sh"]
+      command: ["sh", "-c", "sleep 1d"]
       volumeMounts:
         - name: logs
           mountPath: /logs
