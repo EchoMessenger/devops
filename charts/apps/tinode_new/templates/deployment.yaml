@@ -285,8 +285,7 @@ spec:
         - name: uploads
           mountPath: {{ .Values.persistence.mountPath }}
         - name: logs
-          persistentVolumeClaim:
-            claimName: tinode-logs
+          mountPath: /var/log
         {{- end }}
       
       {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
@@ -294,6 +293,9 @@ spec:
       - name: uploads
         persistentVolumeClaim:
           claimName: {{ include "tinode.fullname" . }}-uploads
+      - name: logs
+        persistentVolumeClaim:
+          claimName: tinode-logs
       {{- end }}
       
       {{- with .Values.nodeSelector }}
