@@ -1,0 +1,312 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tinode.fullname" . }}
+  labels:
+    {{- include "tinode.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tinode.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      labels:
+        {{- include "tinode.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "tinode.serviceAccountName" . }}
+      {{- if .Values.openbao.enabled }}
+      imagePullSecrets:
+      - name: {{ include "tinode.fullname" . }}-registry
+      {{- end }}
+      containers:
+      - name: tinode
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.http.targetPort }}
+          protocol: TCP
+        - name: grpc
+          containerPort: {{ .Values.service.grpc.targetPort }}
+          protocol: TCP
+        {{- if .Values.cluster.enabled }}
+        - name: cluster
+          containerPort: 12000
+          protocol: TCP
+        {{- end }}
+        env:
+        # База данных
+        - name: TARGET_DB
+          value: {{ .Values.database.type | quote }}
+        - name: STORE_USE_ADAPTER
+          value: {{ .Values.database.type | quote }}
+        {{- if .Values.database.waitFor.enabled }}
+        - name: WAIT_FOR
+          value: "{{ .Values.database.waitFor.host }}:{{ .Values.database.waitFor.port }}"
+        {{- end }}
+        - name: RESET_DB
+          value: {{ .Values.database.reset | quote }}
+        - name: UPGRADE_DB
+          value: {{ .Values.database.upgrade | quote }}
+        - name: NO_DB_INIT
+          value: {{ .Values.database.noInit | quote }}
+        - name: SAMPLE_DATA
+          value: {{ .Values.database.sampleData | quote }}
+        
+        # DSN подключения
+        {{- if eq .Values.database.type "postgres" }}
+        {{- if .Values.openbao.enabled }}
+        - name: POSTGRES_DSN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: postgres-dsn
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: postgres-username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: postgres-password
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: postgres-database
+        {{- else }}
+        - name: POSTGRES_DSN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: postgres-dsn
+        {{- end }}
+        {{- else if eq .Values.database.type "mysql" }}
+        - name: MYSQL_DSN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: mysql-dsn
+        {{- end }}
+        
+        # Ключи шифрования
+        - name: API_KEY_SALT
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: api-key-salt
+        - name: AUTH_TOKEN_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: auth-token-key
+        - name: UID_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: uid-encryption-key
+        
+        # Медиа хранилище
+        - name: MEDIA_HANDLER
+          value: {{ .Values.media.handler | quote }}
+        - name: FS_CORS_ORIGINS
+          value: {{ .Values.media.fs.corsOrigins | quote }}
+        {{- if eq .Values.media.handler "s3" }}
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: aws-access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: aws-secret-access-key
+              optional: true
+        - name: AWS_REGION
+          value: {{ .Values.media.s3.region | quote }}
+        - name: AWS_S3_BUCKET
+          value: {{ .Values.media.s3.bucket | quote }}
+        - name: AWS_S3_ENDPOINT
+          value: {{ .Values.media.s3.endpoint | quote }}
+        - name: AWS_CORS_ORIGINS
+          value: {{ .Values.media.s3.corsOrigins | quote }}
+        {{- end }}
+        
+        # Email
+        {{- if .Values.email.smtp.server }}
+        - name: EMAIL_VERIFICATION_REQUIRED
+          value: {{ .Values.email.verification.required | quote }}
+        - name: DEBUG_EMAIL_VERIFICATION_CODE
+          value: {{ .Values.email.verification.debugCode | quote }}
+        - name: SMTP_HOST_URL
+          value: {{ .Values.email.smtp.hostUrl | quote }}
+        - name: SMTP_SERVER
+          value: {{ .Values.email.smtp.server | quote }}
+        - name: SMTP_PORT
+          value: {{ .Values.email.smtp.port | quote }}
+        - name: SMTP_SENDER
+          value: {{ .Values.email.smtp.sender | quote }}
+        - name: SMTP_LOGIN
+          value: {{ .Values.email.smtp.login | quote }}
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: smtp-password
+              optional: true
+        - name: SMTP_AUTH_MECHANISM
+          value: {{ .Values.email.smtp.authMechanism | quote }}
+        - name: SMTP_HELO_HOST
+          value: {{ .Values.email.smtp.heloHost | quote }}
+        - name: SMTP_DOMAINS
+          value: {{ .Values.email.smtp.domains | quote }}
+        {{- end }}
+        
+        # SMS
+        {{- if .Values.tel.hostUrl }}
+        - name: TEL_HOST_URL
+          value: {{ .Values.tel.hostUrl | quote }}
+        - name: TEL_SENDER
+          value: {{ .Values.tel.sender | quote }}
+        - name: DEBUG_TEL_VERIFICATION_CODE
+          value: {{ .Values.tel.debugCode | quote }}
+        {{- end }}
+        
+        # FCM Push
+        - name: FCM_PUSH_ENABLED
+          value: {{ .Values.fcm.enabled | quote }}
+        {{- if .Values.fcm.enabled }}
+        - name: FCM_PROJECT_ID
+          value: {{ .Values.fcm.projectId | quote }}
+        - name: FCM_CRED_FILE
+          value: {{ .Values.fcm.credFile | quote }}
+        - name: FCM_API_KEY
+          value: {{ .Values.fcm.apiKey | quote }}
+        - name: FCM_APP_ID
+          value: {{ .Values.fcm.appId | quote }}
+        - name: FCM_SENDER_ID
+          value: {{ .Values.fcm.senderId | quote }}
+        - name: FCM_VAPID_KEY
+          value: {{ .Values.fcm.vapidKey | quote }}
+        - name: FCM_MEASUREMENT_ID
+          value: {{ .Values.fcm.measurementId | quote }}
+        - name: FCM_INCLUDE_ANDROID_NOTIFICATION
+          value: {{ .Values.fcm.includeAndroidNotification | quote }}
+        {{- end }}
+        
+        # TNPG Push
+        - name: TNPG_PUSH_ENABLED
+          value: {{ .Values.tnpg.enabled | quote }}
+        {{- if .Values.tnpg.enabled }}
+        - name: TNPG_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: tnpg-auth-token
+        - name: TNPG_ORG
+          value: {{ .Values.tnpg.org | quote }}
+        {{- end }}
+        
+        # TLS
+        - name: TLS_ENABLED
+          value: {{ .Values.tls.enabled | quote }}
+        {{- if .Values.tls.enabled }}
+        - name: TLS_DOMAIN_NAME
+          value: {{ .Values.tls.domainName | quote }}
+        - name: TLS_CONTACT_ADDRESS
+          value: {{ .Values.tls.contactAddress | quote }}
+        {{- end }}
+        
+        # WebRTC
+        - name: WEBRTC_ENABLED
+          value: {{ .Values.webrtc.enabled | quote }}
+        {{- if .Values.webrtc.enabled }}
+        - name: ICE_SERVERS_FILE
+          value: {{ .Values.webrtc.iceServersFile | quote }}
+        {{- end }}
+        
+        # Account GC
+        - name: ACC_GC_ENABLED
+          value: {{ .Values.accountGc.enabled | quote }}
+        
+        # Разное
+        - name: DEFAULT_COUNTRY_CODE
+          value: {{ .Values.defaultCountryCode | quote }}
+        - name: SERVER_STATUS_PATH
+          value: {{ .Values.serverStatusPath | quote }}
+        
+        # Кластер
+        {{- if .Values.cluster.enabled }}
+        - name: CLUSTER_SELF
+          value: {{ .Values.cluster.selfName | quote }}
+        {{- end }}
+        
+        # Дополнительные переменные
+        {{- range .Values.extraEnv }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
+        
+        {{- if .Values.extraEnvFrom }}
+        envFrom:
+        {{- toYaml .Values.extraEnvFrom | nindent 8 }}
+        {{- end }}
+        
+        {{- if .Values.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.livenessProbe.httpGet.path }}
+            port: {{ .Values.livenessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+        {{- end }}
+        
+        {{- if .Values.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.readinessProbe.httpGet.path }}
+            port: {{ .Values.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+        {{- end }}
+        
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        
+        {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
+        volumeMounts:
+        - name: uploads
+          mountPath: {{ .Values.persistence.mountPath }}
+        - name: logs
+          mountPath: /var/log
+        {{- end }}
+      
+      {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: {{ include "tinode.fullname" . }}-uploads
+      - name: logs
+        persistentVolumeClaim:
+          claimName: tinode-logs
+      {{- end }}
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

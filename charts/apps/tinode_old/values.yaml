@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/tinode-server
+  tag: latest-amd64
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 6060
+
+storage:
+  storageClassName: local-path
+  size: 10Gi
+  accessMode: ReadWriteOnce
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+postgres:
+  host: postgres
+  port: 5432
+  sslMode: disable
+
+ingress:
+  enabled: true
+  className: nginx
+  host: echo-messenger.ru
+  tls:
+    enabled: false
+    secretName: tinode-tls
+
+openbao:
+  enabled: true

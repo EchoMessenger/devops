@@ -1,0 +1,179 @@
+# Пример файла с пользовательскими значениями для production
+# Сохраните как my-values.yaml и используйте:
+# helm install tinode ./tinode-helm -f my-values.yaml
+
+# OpenBao интеграция (рекомендуется для production)
+openbao:
+  enabled: true
+  clusterSecretStore: openbao-global
+  secrets:
+    registry:
+      path: registry/ghcr
+    postgres:
+      path: tinode/postgres
+    keygen:
+      path: tinode/keygen
+    # Опциональные пути для дополнительных секретов
+    # smtp:
+    #   path: tinode/smtp
+    # s3:
+    #   path: tinode/s3
+    # tnpg:
+    #   path: tinode/tnpg
+
+# Количество реплик для высокой доступности
+replicaCount: 3
+
+# База данных PostgreSQL
+database:
+  type: postgres
+  waitFor:
+    enabled: true
+    host: postgres-service
+    port: 5432
+  # DSN не нужен при использовании OpenBao - он будет построен автоматически
+  # из секретов postgres-username, postgres-password, postgres-database
+  postgres:
+    dsn: ""  # Оставить пустым при openbao.enabled=true
+  reset: false
+  upgrade: false
+  noInit: false
+  sampleData: ""  # Не загружать тестовые данные в production
+
+# ВАЖНО: При использовании OpenBao эти ключи не используются
+# Секреты загружаются из OpenBao по путям:
+# - tinode/keygen/hmac_salt -> api-key-salt
+# - tinode/keygen/token_key -> auth-token-key
+# - tinode/keygen/uid_key -> uid-encryption-key
+encryption:
+  apiKeySalt: ""  # Будет загружен из OpenBao
+  authTokenKey: ""  # Будет загружен из OpenBao
+  uidEncryptionKey: ""  # Будет загружен из OpenBao
+
+# Хранилище медиа на S3
+media:
+  handler: "s3"
+  s3:
+    accessKeyId: "YOUR_AWS_ACCESS_KEY"
+    secretAccessKey: "YOUR_AWS_SECRET_KEY"
+    region: "eu-central-1"
+    bucket: "tinode-media-bucket"
+    endpoint: ""  # Оставить пустым для AWS, указать для MinIO/S3-compatible
+    corsOrigins: '["https://tinode.example.com"]'
+
+# Email верификация
+email:
+  verification:
+    required: true
+    debugCode: ""  # Пусто в production
+  smtp:
+    hostUrl: "https://tinode.example.com"
+    server: "smtp.gmail.com"
+    port: "587"
+    sender: "noreply@example.com"
+    login: "noreply@example.com"
+    password: "YOUR_SMTP_PASSWORD"
+    authMechanism: "plain"
+    heloHost: "tinode.example.com"
+    domains: '["example.com","company.com"]'
+
+# Push уведомления FCM
+fcm:
+  enabled: true
+  projectId: "your-firebase-project"
+  credFile: "/path/to/firebase-credentials.json"
+  apiKey: "YOUR_FCM_API_KEY"
+  appId: "YOUR_FCM_APP_ID"
+  senderId: "YOUR_SENDER_ID"
+  vapidKey: "YOUR_VAPID_KEY"
+  measurementId: "YOUR_MEASUREMENT_ID"
+
+# TLS через Let's Encrypt (если не используется Ingress с cert-manager)
+tls:
+  enabled: false  # Отключить, если используется Ingress
+  domainName: "tinode.example.com"
+  contactAddress: "admin@example.com"
+
+# Ingress с TLS
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/websocket-services: "tinode"
+  hosts:
+    - host: tinode.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: tinode-tls
+      hosts:
+        - tinode.example.com
+
+# WebRTC для видеозвонков
+webrtc:
+  enabled: true
+  iceServersFile: "/etc/tinode/ice-servers.json"
+
+# Очистка незавершенных регистраций
+accountGc:
+  enabled: true
+
+# Ресурсы для production
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+# PersistentVolume для uploads (если используется fs вместо s3)
+persistence:
+  enabled: false  # Отключено, т.к. используется S3
+  storageClass: "longhorn"
+  size: 50Gi
+
+# Affinity для распределения подов по нодам
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - tinode
+        topologyKey: kubernetes.io/hostname
+
+# Health checks с увеличенными таймаутами
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 6060
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 6060
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Дополнительные переменные окружения
+extraEnv:
+  - name: TZ
+    value: "Europe/Moscow"
+  - name: LOG_LEVEL
+    value: "info"

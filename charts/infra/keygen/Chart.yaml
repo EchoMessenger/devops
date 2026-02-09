@@ -1,0 +1,6 @@
+apiVersion: v2
+name: keygen
+description: A Helm chart for generating API keys and storing them in OpenBao
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

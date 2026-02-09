@@ -1,0 +1,86 @@
+{{- if .Values.openbao.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "keygen.fullname" . }}-to-openbao
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "30"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ghcr-secret
+
+      volumes:
+        - name: keygen-output
+          emptyDir: {}
+
+      initContainers:
+        - name: keygen
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: keygen-output
+              mountPath: /out
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              echo "Running keygen..."
+              /usr/local/bin/keygen > /out/keys.json
+              echo "Keygen output:"
+              cat /out/keys.json
+
+      containers:
+        - name: openbao-writer
+          image: alpine:3.19
+          volumeMounts:
+            - name: keygen-output
+              mountPath: /out
+          env:
+            - name: VAULT_ADDR
+              value: {{ .Values.openbao.address | quote }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openbao-bootstrap
+                  key: root-token
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              apk add --no-cache curl jq
+
+              API_KEY=$(jq -r '.api_key' /out/keys.json)
+              HMAC_SALT=$(jq -r '.hmac_salt' /out/keys.json)
+
+              if [ -z "$API_KEY" ] || [ "$HMAC_SALT" = "null" ]; then
+                echo "ERROR: invalid keygen output"
+                exit 1
+              fi
+
+              echo "Writing secrets to OpenBao..."
+
+              curl -sSf \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -X POST \
+                $VAULT_ADDR/v1/secret/data/tinode/keygen \
+                -d @- <<EOF
+              {
+                "data": {
+                  "api_key": "$API_KEY",
+                  "hmac_salt": "$HMAC_SALT",
+                  "uid_key": "$(head -c 16 /dev/urandom | base64 | tr -d '\n')",
+                  "token_key": "$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
+                }
+              }
+              EOF
+
+              echo "Secrets successfully stored in OpenBao"
+{{- end }}

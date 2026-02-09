@@ -1,0 +1,224 @@
+# Образ Tinode
+image:
+  repository: ghcr.io/echomessenger/tinode-server
+  tag: latest-amd64
+  pullPolicy: Always
+
+# OpenBao интеграция через External Secrets Operator
+openbao:
+  enabled: true
+  clusterSecretStore: openbao-global
+  # Пути к секретам в OpenBao
+  secrets:
+    registry:
+      path: registry/ghcr
+    postgres:
+      path: tinode/postgres
+    keygen:
+      path: tinode/keygen
+
+# Количество реплик
+replicaCount: 1
+
+# Тип сервиса и порты
+service:
+  type: ClusterIP
+  http:
+    port: 6060
+    targetPort: 6060
+  grpc:
+    port: 16060
+    targetPort: 16060
+
+# Ingress для доступа извне
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: tinode.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: tinode-tls
+  #    hosts:
+  #      - tinode.example.com
+
+# База данных
+database:
+  # Тип БД: mysql, postgres, mongodb, rethinkdb
+  type: postgres
+  
+  # Настройки для ожидания готовности БД
+  waitFor:
+    enabled: true
+    host: postgres
+    port: 5432
+  
+  # DSN подключения
+  # При использовании OpenBao DSN не нужен - он будет построен автоматически из секретов
+  postgres:
+    dsn: ""
+  
+  # Опции инициализации
+  reset: false
+  upgrade: false
+  noInit: false
+  sampleData: "data.json"
+
+# Ключи шифрования (ОБЯЗАТЕЛЬНО замените на свои!)
+# При использовании OpenBao эти ключи не используются
+encryption:
+  apiKeySalt: ""
+  authTokenKey: ""
+  uidEncryptionKey: ""
+
+# Конфигурация хранилища медиа
+media:
+  handler: "fs"  # fs или s3
+  maxSize: 33554432  # 32MB
+  
+  # Настройки файловой системы
+  fs:
+    corsOrigins: '["*"]'
+  
+  # Настройки S3
+  s3:
+    accessKeyId: ""
+    secretAccessKey: ""
+    region: ""
+    bucket: ""
+    endpoint: ""
+    corsOrigins: '["*"]'
+
+# Email верификация
+email:
+  verification:
+    required: false
+    debugCode: ""
+  smtp:
+    hostUrl: "http://localhost:6060"
+    server: ""
+    port: ""
+    sender: ""
+    login: ""
+    password: ""
+    authMechanism: ""
+    heloHost: ""
+    domains: ""  # JSON массив доменов, например '["example.com"]'
+
+# SMS верификация
+tel:
+  hostUrl: ""
+  sender: ""
+  debugCode: ""
+
+# Push уведомления через FCM
+fcm:
+  enabled: false
+  projectId: ""
+  credFile: ""
+  apiKey: ""
+  appId: ""
+  senderId: ""
+  vapidKey: ""
+  measurementId: ""
+  includeAndroidNotification: true
+
+# Push через Tinode Push Gateway
+tnpg:
+  enabled: false
+  authToken: ""
+  org: ""
+
+# TLS/SSL
+tls:
+  enabled: false
+  domainName: ""
+  contactAddress: ""
+
+# WebRTC
+webrtc:
+  enabled: false
+  iceServersFile: ""
+
+# Garbage collection для незавершенных регистраций
+accountGc:
+  enabled: false
+
+# Дефолтный код страны
+defaultCountryCode: "RU"
+
+# Путь для статуса сервера
+serverStatusPath: ""
+
+# Кластеризация
+cluster:
+  enabled: false
+  selfName: ""
+  nodes:
+    - name: "tinode-0"
+      addr: "tinode-0:12000"
+    - name: "tinode-1"
+      addr: "tinode-1:12001"
+    - name: "tinode-2"
+      addr: "tinode-2:12002"
+
+# Ресурсы подов
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Health checks
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 6060
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 6060
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+# PersistentVolume для uploads (если используется fs handler)
+persistence:
+  enabled: true
+  storageClass: ""  # Оставить пустым для дефолтного StorageClass
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /opt/tinode/uploads
+
+# NodeSelector, tolerations, affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ServiceAccount
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+# Дополнительные переменные окружения
+extraEnv: []
+  # - name: CUSTOM_VAR
+  #   value: "custom_value"
+
+# ConfigMap и Secret для дополнительных настроек
+extraEnvFrom: []
+  # - configMapRef:
+  #     name: tinode-extra-config
+  # - secretRef:
+  #     name: tinode-extra-secrets

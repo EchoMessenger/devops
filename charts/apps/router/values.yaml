@@ -26,8 +26,6 @@ log:
 
 openbao:
   enabled: true
-  path: "secret"
   role: "router"
-  serviceAccount: "router-sa"
   secretsPath: "kafka"
   resyncInterval: "10s"
