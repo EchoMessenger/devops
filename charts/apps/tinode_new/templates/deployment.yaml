@@ -284,10 +284,10 @@ spec:
         volumeMounts:
         - name: uploads
           mountPath: {{ .Values.persistence.mountPath }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: tinode-logs
         {{- end }}
-
-        args:
-          - "-logtostderr=true"
       
       {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
       volumes:
