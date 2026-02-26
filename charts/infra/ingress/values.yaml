@@ -1,0 +1,13 @@
+ingress:
+  host: www.echo-messenger.ru
+  tlsSecretName: tinode-tls
+
+service:
+  name: tinode
+  namespace: tinode
+  port: 6060
+
+certManager:
+  email: 1ceptnpd@gmail.com   # <-- замени
+  issuerName: letsencrypt-prod
+  server: https://acme-v02.api.letsencrypt.org/directory
