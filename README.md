@@ -244,3 +244,16 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/do
 kubectl get pods -n cert-manager
 ```
 
+Установка чарта:
+
+```sh
+helm install ingress ./ingress
+```
+
+Проверка:
+
+```sh
+kubectl get certificate -n tinode
+kubectl describe certificaterequest -n tinode
+```
+
