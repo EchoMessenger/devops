@@ -12,7 +12,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 tinodeServer:
-  host: tinode-server.tinode.svc.cluster.local
+  host: tinode.tinode.svc.cluster.local
   port: 6060
 
 service:
