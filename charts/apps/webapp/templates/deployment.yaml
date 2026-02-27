@@ -35,7 +35,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "webapp.fullname" . }}
-                  key: api-key-salt
+                  key: api-key
             # DEFAULT_HOST пустой = webapp использует window.location.host
             # Nginx проксирует /v0/ на backend
             - name: DEFAULT_HOST
