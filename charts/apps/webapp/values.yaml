@@ -1,0 +1,60 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/webapp
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+tinodeServer:
+  host: tinode-server.tinode.svc.cluster.local
+  port: 6060
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Важно для WebSocket и больших файлов
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: www.echo-messenger.ru
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: tinode-webapp-tls
+      hosts:
+        - www.echo-messenger.ru
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# OpenBao
+openbao:
+  clusterSecretStore: openbao-global
+  secrets:
+    keygen:
+      path: tinode/keygen
+    ghcr:
+      path: registry/ghcr

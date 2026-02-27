@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tinode-webapp.fullname" . }}-nginx
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tinode-webapp.labels" . | nindent 4 }}
+data:
+  default.conf: |
+    upstream tinode_backend {
+        server {{ .Values.tinodeServer.host }}:{{ .Values.tinodeServer.port }};
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # --- Gzip ---
+        gzip on;
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_types text/plain text/css application/json application/javascript
+                   text/xml application/xml image/svg+xml;
+
+        # --- Tinode API + WebSocket proxy ---
+        location /v0/ {
+            proxy_pass http://tinode_backend/v0/;
+            proxy_http_version 1.1;
+
+            # WebSocket upgrade
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Долгие WebSocket соединения
+            proxy_read_timeout 86400s;
+            proxy_send_timeout 86400s;
+
+            # Размер загружаемых файлов
+            client_max_body_size 10m;
+        }
+
+        # --- SPA fallback ---
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # --- Кэш статики ---
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$ {
+            expires 7d;
+            add_header Cache-Control "public";
+        }
+
+        # runtime-config.js НЕ кэшируем (содержит секреты)
+        location = /runtime-config.js {
+            expires -1;
+            add_header Cache-Control "no-store, no-cache, must-revalidate";
+        }
+
+        location ~ /\. {
+            deny all;
+        }
+    }
