@@ -1,8 +1,8 @@
-{{- define "tinode-webapp.name" -}}
+{{- define "webapp.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "tinode-webapp.fullname" -}}
+{{- define "webapp.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -15,14 +15,14 @@
 {{- end }}
 {{- end }}
 
-{{- define "tinode-webapp.labels" -}}
+{{- define "webapp.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{ include "tinode-webapp.selectorLabels" . }}
+{{ include "webapp.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 
-{{- define "tinode-webapp.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "tinode-webapp.name" . }}
+{{- define "webapp.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "webapp.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "tinode-webapp.fullname" . }}
+  name: {{ include "webapp.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "tinode-webapp.labels" . | nindent 4 }}
+    {{- include "webapp.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "tinode-webapp.selectorLabels" . | nindent 6 }}
+      {{- include "webapp.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
         # Рестарт при изменении nginx конфига
         checksum/nginx-config: {{ include (print $.Template.BasePath "/configmap-nginx.yaml") . | sha256sum }}
       labels:
-        {{- include "tinode-webapp.selectorLabels" . | nindent 8 }}
+        {{- include "webapp.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -34,7 +34,7 @@ spec:
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "tinode-webapp.fullname" . }}
+                  name: {{ include "webapp.fullname" . }}
                   key: api-key-salt
             # DEFAULT_HOST пустой = webapp использует window.location.host
             # Nginx проксирует /v0/ на backend
@@ -63,7 +63,7 @@ spec:
       volumes:
         - name: nginx-config
           configMap:
-            name: {{ include "tinode-webapp.fullname" . }}-nginx
+            name: {{ include "webapp.fullname" . }}-nginx
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
