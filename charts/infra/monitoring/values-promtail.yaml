@@ -1,0 +1,39 @@
+# values-promtail.yaml
+
+config:
+  clients:
+    - url: http://loki-gateway.monitoring.svc.cluster.local:80/loki/api/v1/push
+  
+  snippets:
+    # Парсинг логов по namespaces
+    pipelineStages:
+      - cri: {}
+      - match:
+          selector: '{namespace="tinode"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  msg: msg
+            - labels:
+                level:
+      - match:
+          selector: '{namespace="kafka"}'
+          stages:
+            - regex:
+                expression: '^(?P<timestamp>\S+)\s+(?P<level>\w+)\s+(?P<message>.+)$'
+            - labels:
+                level:
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+serviceMonitor:
+  enabled: true
+
+tolerations:
+  - operator: Exists
