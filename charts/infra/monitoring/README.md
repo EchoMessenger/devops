@@ -28,7 +28,7 @@ helm upgrade --install loki grafana/loki \
 echo "=== 5. Promtail ==="
 helm upgrade --install promtail grafana/promtail \
   --namespace monitoring \
-  -f values-promtail.yaml \
+  -f monitoring/values-promtail.yaml \
   --wait
 
 # echo "=== 6. Tempo ==="
@@ -38,11 +38,31 @@ helm upgrade --install promtail grafana/promtail \
 #   --wait
 
 echo "=== 7. Exporters и мониторы ==="
-kubectl apply -f postgres-exporter.yaml
-kubectl apply -f cert-manager-monitor.yaml
-kubectl apply -f traefik-monitor.yaml
-kubectl apply -f custom-alerts.yaml
+kubectl apply -f monitoring/postgres-exporter.yaml
+kubectl apply -f monitoring/cert-manager-monitor.yaml
+kubectl apply -f monitoring/traefik-monitor.yaml
+kubectl apply -f monitoring/custom-alerts.yaml
 
 echo "=== Готово! ==="
 echo "Grafana: kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80"
 ```
+
+# Использование
+
+Port-forward:
+
+```sh
+# На сервере
+export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=kube-prometheus-stack" -oname)
+kubectl --namespace monitoring port-forward $POD_NAME 3000
+# Локально
+ssh -L 3000:127.0.0.1:3000 nikita@www.echo-messenger.ru
+```
+
+Получаем пароль на сервере:
+
+```sh
+kubectl --namespace monitoring get secrets kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+```
+
+Заходим на `localhost:3000` вводим `admin` и пароль
