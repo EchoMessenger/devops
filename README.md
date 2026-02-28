@@ -247,7 +247,7 @@ kubectl get pods -n cert-manager
 Установка чарта:
 
 ```sh
-helm install ingress ./ingress
+helm install cluster-infra ./cluster-infra
 ```
 
 Проверка:

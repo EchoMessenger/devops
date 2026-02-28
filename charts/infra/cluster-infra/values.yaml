@@ -1,4 +1,4 @@
 certManager:
-  email: 1ceptnpd@gmail.com   # <-- замени
+  email: "" # set via --set certManager.email=...
   issuerName: letsencrypt-prod
   server: https://acme-v02.api.letsencrypt.org/directory

@@ -13,13 +13,24 @@ spec:
       labels:
         app: tinode-log-reader
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: reader
           image: busybox
           command: ["sh", "-c", "sleep infinity"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: logs
               mountPath: /logs
+              readOnly: true
       volumes:
         - name: logs
           persistentVolumeClaim:
