@@ -42,7 +42,7 @@ metadata:
 type: Opaque
 stringData:
   # Поменяйте на ваши данные подключения
-  dsn: "postgresql://postgres:PASSWORD@postgres.tinode.svc:5432/tinode?sslmode=disable"
+  dsn: "" # set via --set stringData.dsn=...
 ---
 apiVersion: v1
 kind: Service

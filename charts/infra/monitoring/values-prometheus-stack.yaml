@@ -3,6 +3,7 @@
 prometheus:
   prometheusSpec:
     retention: 15d
+    enableRemoteWriteReceiver: true
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -22,21 +23,6 @@ prometheus:
         memory: 512Mi
       limits:
         memory: 2Gi
-    # Дополнительные scrape targets
-    additionalScrapeConfigs:
-      # Traefik метрики
-      - job_name: 'traefik'
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names: ['kube-system']
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-            regex: traefik
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_ip]
-            target_label: __address__
-            replacement: '${1}:9100'
 
 grafana:
   adminPassword: "" # set via --set grafana.adminPassword=...
@@ -121,55 +107,6 @@ grafana:
       - secretName: grafana-tls
         hosts:
           - www.grafana.echo-messenger.ru
-
-# alertmanager:
-#   alertmanagerSpec:
-#     storage:
-#       volumeClaimTemplate:
-#         spec:
-#           accessModes: ["ReadWriteOnce"]
-#           resources:
-#             requests:
-#               storage: 2Gi
-#   # Настройка уведомлений
-#   config:
-#     global:
-#       resolve_timeout: 5m
-#     route:
-#       receiver: 'telegram'
-#       group_by: ['alertname', 'namespace']
-#       group_wait: 30s
-#       group_interval: 5m
-#       repeat_interval: 4h
-#       routes:
-#         - receiver: 'critical-telegram'
-#           match:
-#             severity: critical
-#           repeat_interval: 1h
-#     receivers:
-#       - name: 'telegram'
-#         telegram_configs:
-#           - bot_token: 'YOUR_BOT_TOKEN'
-#             chat_id: YOUR_CHAT_ID
-#             parse_mode: 'HTML'
-#             message: |
-#               {{ range .Alerts }}
-#               <b>{{ .Labels.alertname }}</b>
-#               <b>Severity:</b> {{ .Labels.severity }}
-#               <b>Namespace:</b> {{ .Labels.namespace }}
-#               <b>Description:</b> {{ .Annotations.description }}
-#               {{ end }}
-#       - name: 'critical-telegram'
-#         telegram_configs:
-#           - bot_token: 'YOUR_BOT_TOKEN'
-#             chat_id: YOUR_CHAT_ID
-#             parse_mode: 'HTML'
-#             message: |
-#               🔴 <b>CRITICAL</b>
-#               {{ range .Alerts }}
-#               <b>{{ .Labels.alertname }}</b>
-#               <b>Description:</b> {{ .Annotations.description }}
-#               {{ end }}
 
 # Node exporter для метрик хоста
 nodeExporter:
