@@ -1,0 +1,50 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/webapp
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+tinodeServer:
+  host: tinode.tinode.svc.cluster.local
+  port: 6060
+
+service:
+  name: webapp
+  namespace: tinode
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  host: www.echo-messenger.ru
+  tlsSecretName: tinode-webapp-tls
+
+certManager:
+  issuerName: letsencrypt-prod
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+openbao:
+  clusterSecretStore: openbao-global
+  secrets:
+    keygen:
+      path: tinode/keygen
+    ghcr:
+      path: registry/ghcr

@@ -229,3 +229,31 @@ kubectl exec -it -n tinode postgres-0 -- psql -U postgres -d postgres -c "\l"
 ## Tinode
 
 **TODO**
+
+## Ingress
+
+Установка cert-manager:
+
+``` sh
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+```
+
+Проверка:
+
+``` sh
+kubectl get pods -n cert-manager
+```
+
+Установка чарта:
+
+```sh
+helm install cluster-infra ./cluster-infra
+```
+
+Проверка:
+
+```sh
+kubectl get certificate -n tinode
+kubectl describe certificaterequest -n tinode
+```
+
