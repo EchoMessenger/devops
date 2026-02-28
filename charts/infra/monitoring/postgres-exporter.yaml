@@ -34,15 +34,24 @@ spec:
             limits:
               memory: 128Mi
 ---
-apiVersion: v1
-kind: Secret
+piVersion: external-secrets.io/v1
+kind: ExternalSecret
 metadata:
-  name: postgres-exporter-secret
+  name: postgres-exporter-es
   namespace: tinode
-type: Opaque
-stringData:
-  # Поменяйте на ваши данные подключения
-  dsn: "" # set via --set stringData.dsn=...
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao-global
+    kind: ClusterSecretStore
+  target:
+    name: postgres-exporter-secret 
+    creationPolicy: Owner
+  data:
+    - secretKey: dsn
+      remoteRef:
+        key: tinode/postgres
+        property: tinodeUrl
 ---
 apiVersion: v1
 kind: Service
