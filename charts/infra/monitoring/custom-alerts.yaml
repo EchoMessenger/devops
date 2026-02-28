@@ -1,0 +1,119 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: custom-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: pod-alerts
+      rules:
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            description: >
+              Pod {{ $labels.namespace }}/{{ $labels.pod }} 
+              перезапускается ({{ $value }} раз/мин)
+
+        - alert: PodNotReady
+          expr: |
+            kube_pod_status_phase{phase=~"Pending|Unknown"} > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            description: >
+              Pod {{ $labels.namespace }}/{{ $labels.pod }} 
+              не в состоянии Ready более 10 минут
+
+    - name: node-alerts
+      rules:
+        - alert: HighDiskUsage
+          expr: |
+            (1 - node_filesystem_avail_bytes{mountpoint="/"} 
+            / node_filesystem_size_bytes{mountpoint="/"}) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            description: "Диск заполнен на {{ $value | humanize }}%"
+
+        - alert: HighMemoryUsage
+          expr: |
+            (1 - node_memory_MemAvailable_bytes 
+            / node_memory_MemTotal_bytes) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            description: "RAM используется на {{ $value | humanize }}%"
+
+        - alert: HighCPUUsage
+          expr: |
+            100 - (avg by(instance) 
+            (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            description: "CPU загружен на {{ $value | humanize }}%"
+
+    - name: kafka-alerts
+      rules:
+        - alert: KafkaBrokerDown
+          expr: count(kafka_server_replicamanager_leadercount) == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            description: "Kafka брокер недоступен"
+
+    - name: postgres-alerts
+      rules:
+        - alert: PostgresDown
+          expr: pg_up == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            description: "PostgreSQL недоступен"
+
+        - alert: PostgresTooManyConnections
+          expr: |
+            pg_stat_activity_count / pg_settings_max_connections > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            description: >
+              PostgreSQL: {{ $value | humanizePercentage }} 
+              подключений использовано
+
+    - name: certificate-alerts
+      rules:
+        - alert: CertificateExpiringSoon
+          expr: certmanager_certificate_expiration_timestamp_seconds - time() < 7*24*3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            description: >
+              Сертификат {{ $labels.name }} в namespace 
+              {{ $labels.namespace }} истекает менее чем через 7 дней
+
+    - name: openbao-alerts
+      rules:
+        - alert: OpenBaoSealed
+          expr: |
+            kube_pod_container_status_ready{
+              namespace="openbao", container="openbao"
+            } == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            description: "OpenBao запечатан или недоступен"
