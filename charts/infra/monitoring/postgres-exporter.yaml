@@ -34,7 +34,7 @@ spec:
             limits:
               memory: 128Mi
 ---
-piVersion: external-secrets.io/v1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: postgres-exporter-es
