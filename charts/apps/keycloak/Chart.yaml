@@ -7,4 +7,4 @@ type: application
 dependencies:
   - name: keycloak
     version: "24.4.0"
-    repository: "https://charts.bitnami.com/bitnami"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
