@@ -266,8 +266,18 @@ kubectl create ns keycloak
 # Create secret
 kubectl exec openbao-0 -n openbao -it -- sh
 
-bao kv put secret/platform/keycloak \
-  admin-password="SuperSecretAdmin123!" \
-  postgres-password="SuperSecretPG123!" \
-  password="SuperSecretKeycloakDB123!"
+## Сгенерировать надёжные пароли
+
+# admin-password (32 символа)
+ADMIN_PASSWORD=$(openssl rand -base64 32)
+
+# db-password (32 символа)
+DB_PASSWORD=$(openssl rand -base64 32)
+
+echo "admin-password: $ADMIN_PASSWORD"
+echo "db-password:    $DB_PASSWORD"
+
+bao kv put -mount=secret platform/keycloak \
+  admin-password="$ADMIN_PASSWORD" \
+  db-password="$DB_PASSWORD"
 ```

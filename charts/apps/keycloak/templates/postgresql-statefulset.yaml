@@ -37,7 +37,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgresql.existingSecret }}
-                  key: password
+                  key: db-password
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           resources:
@@ -65,7 +65,18 @@ spec:
                 - {{ .Values.postgresql.database }}
             initialDelaySeconds: 5
             periodSeconds: 10
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: {{ include "keycloak.fullname" . }}-postgresql
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "keycloak.labels" . | nindent 10 }}
+          app.kubernetes.io/component: postgresql
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.postgresql.storage.storageClassName }}
+        storageClassName: {{ .Values.postgresql.storage.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgresql.storage.size }}

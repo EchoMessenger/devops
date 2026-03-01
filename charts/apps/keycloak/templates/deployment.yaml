@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: keycloak
-          image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
+          image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
           args:
             - start
@@ -47,7 +47,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.keycloak.existingSecret }}
-                  key: password
+                  key: db-password
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               value: {{ .Values.keycloak.adminUser }}
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD
