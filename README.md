@@ -264,9 +264,10 @@ kubectl describe certificaterequest -n tinode
 kubectl create ns keycloak
 
 # Create secret
-kubectl create secret generic keycloak-secrets \
-  --namespace keycloak \
-  --from-literal=admin-password='SuperSecretAdmin123!' \
-  --from-literal=postgres-password='SuperSecretPG123!' \
-  --from-literal=password='SuperSecretKeycloakDB123!'
+kubectl exec openbao-0 -n openbao -it -- sh
+
+bao kv put secret/platform/keycloak \
+  admin-password="SuperSecretAdmin123!" \
+  postgres-password="SuperSecretPG123!" \
+  password="SuperSecretKeycloakDB123!"
 ```

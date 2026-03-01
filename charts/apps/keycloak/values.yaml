@@ -1,9 +1,10 @@
 keycloak:
-  production: false
+  production: true
+  proxy: edge                              # TLS на Traefik, Keycloak по HTTP
 
   auth:
     adminUser: admin
-    existingSecret: keycloak-secrets
+    existingSecret: keycloak-secrets       # ключ: admin-password
 
   replicaCount: 1
 
@@ -15,10 +16,13 @@ keycloak:
       cpu: 1000m
       memory: 1Gi
 
+  httpRelativePath: "/"
+
+  # ── PostgreSQL ──
   postgresql:
     enabled: true
     auth:
-      existingSecret: keycloak-secrets
+      existingSecret: keycloak-secrets     # ключи: postgres-password, password
       username: keycloak
       database: keycloak
     primary:
@@ -26,14 +30,25 @@ keycloak:
         enabled: true
         size: 8Gi
 
+  # ── Service ──
   service:
     type: ClusterIP
     ports:
       http: 80
-      https: 443
 
+  # ── Ingress ──
   ingress:
-    enabled: false
+    enabled: true
+    ingressClassName: traefik
+    hostname: auth.echo-messenger.ru
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
+      traefik.ingress.kubernetes.io/router.middlewares: keycloak-redirect-to-https@kubernetescrd
+    tls: true
 
-  metrics:
-    enabled: false
+openbao:
+  clusterSecretStore: openbao-global
+  secrets:
+    keycloak:
+      path: platform/keycloak             # путь в OpenBao
