@@ -3,4 +3,4 @@ name: keycloak
 description: Keycloak IAM (official image)
 version: 1.0.0
 type: application
-appVersion: "26.0"
+appVersion: "26.5"
