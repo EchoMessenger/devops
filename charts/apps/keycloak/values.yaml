@@ -1,3 +1,7 @@
+global:
+  security:
+    allowInsecureImages: true
+
 keycloak:
   image:
     repository: keycloak/keycloak
