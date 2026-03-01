@@ -257,3 +257,16 @@ kubectl get certificate -n tinode
 kubectl describe certificaterequest -n tinode
 ```
 
+# Keycloak
+
+```sh
+# Create ns
+kubectl create ns keycloak
+
+# Create secret
+kubectl create secret generic keycloak-secrets \
+  --namespace keycloak \
+  --from-literal=admin-password='SuperSecretAdmin123!' \
+  --from-literal=postgres-password='SuperSecretPG123!' \
+  --from-literal=password='SuperSecretKeycloakDB123!'
+```

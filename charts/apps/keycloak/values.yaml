@@ -1,0 +1,39 @@
+keycloak:
+  production: false
+
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-secrets
+
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  postgresql:
+    enabled: true
+    auth:
+      existingSecret: keycloak-secrets
+      username: keycloak
+      database: keycloak
+    primary:
+      persistence:
+        enabled: true
+        size: 8Gi
+
+  service:
+    type: ClusterIP
+    ports:
+      http: 80
+      https: 443
+
+  ingress:
+    enabled: false
+
+  metrics:
+    enabled: false
