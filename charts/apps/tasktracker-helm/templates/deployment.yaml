@@ -15,10 +15,6 @@ spec:
         {{- include "tasktracker.selectorLabels" . | nindent 8 }}
     spec:
       {{- if .Values.openbao.enabled }}
-      serviceAccountName: {{ include "tasktracker.serviceAccountName" . }}
-      {{- end }}
-
-      {{- if .Values.openbao.enabled }}
       imagePullSecrets:
         - name: ghcr-secret
       {{- end }}
