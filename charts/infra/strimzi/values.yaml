@@ -81,13 +81,15 @@ user:
         type: topic
         name: tinode.account-events
         patternType: literal
-      operation: Read
+      operations:
+        - Read
 
     - resource:
         type: group
         name: fastapi-user-sync-consumer
         patternType: literal
-      operation: Read
+      operations:
+        - Read
 
 pushSecret:
   # -- Enable creation of PushSecret resource to sync secrets to external store
