@@ -76,20 +76,8 @@ user:
   # -- Additional labels for the KafkaUser resource
   labels: {}
   # -- Access Control Lists (ACLs) for the user
-  acls:
-    - resource:
-        type: topic
-        name: tinode.account-events
-        patternType: literal
-      operations:
-        - Read
+  acls: []
 
-    - resource:
-        type: group
-        name: fastapi-user-sync-consumer
-        patternType: literal
-      operations:
-        - Read
 
 pushSecret:
   # -- Enable creation of PushSecret resource to sync secrets to external store
