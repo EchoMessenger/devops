@@ -3,6 +3,8 @@ kind: Kafka
 metadata:
   name: {{ .Values.kafka.name }}
   namespace: {{ .Values.kafka.namespace }}
+  annotations:
+    strimzi.io/node-pools: enabled
 spec:
   kafka:
     version: {{ .Values.kafka.version | quote }}
