@@ -3,7 +3,14 @@ image:
   registry: ghcr.io
   repository: echomessenger/keygen
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
+
+openbaoWriter:
+  image:
+    registry: ghcr.io
+    repository: echomessenger/openbao-writer
+    tag: latest
+    pullPolicy: IfNotPresent
 
 imagePullSecrets:
   - name: ghcr-secret

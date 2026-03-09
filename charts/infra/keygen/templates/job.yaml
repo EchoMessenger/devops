@@ -38,7 +38,8 @@ spec:
 
       containers:
         - name: openbao-writer
-          image: alpine:3.19
+          image: "{{ .Values.openbaoWriter.image.registry }}/{{ .Values.openbaoWriter.image.repository }}:{{ .Values.openbaoWriter.image.tag }}"
+          imagePullPolicy: {{ .Values.openbaoWriter.image.pullPolicy }}
           volumeMounts:
             - name: keygen-output
               mountPath: /out
@@ -48,13 +49,13 @@ spec:
             - name: VAULT_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: openbao-bootstrap
-                  key: root-token
+                  name: {{ .Values.keygenJob.rootTokenSecret.name }}
+                  key: {{ .Values.keygenJob.rootTokenSecret.key }}
           command:
             - /bin/sh
             - -ec
             - |
-              apk add --no-cache curl jq
+              # curl и jq уже предустановлены в образе — apk не нужен
 
               API_KEY=$(jq -r '.api_key' /out/keys.json)
               HMAC_SALT=$(jq -r '.hmac_salt' /out/keys.json)
@@ -70,7 +71,7 @@ spec:
                 -H "X-Vault-Token: $VAULT_TOKEN" \
                 -H "Content-Type: application/json" \
                 -X POST \
-                $VAULT_ADDR/v1/secret/data/tinode/keygen \
+                "$VAULT_ADDR/v1/{{ .Values.openbao.kv.mount }}/data/tinode/{{ .Values.openbao.kv.path }}" \
                 -d @- <<EOF
               {
                 "data": {
