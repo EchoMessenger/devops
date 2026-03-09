@@ -268,14 +268,11 @@ kubectl exec openbao-0 -n openbao -it -- sh
 
 ## Сгенерировать надёжные пароли
 
-# admin-password (32 символа)
-ADMIN_PASSWORD=$(openssl rand -base64 32)
+# admin-password (32 случайных байта)
+ADMIN_PASSWORD="$(openssl rand -base64 32)"
 
-# db-password (32 символа)
-DB_PASSWORD=$(openssl rand -base64 32)
-
-echo "admin-password: $ADMIN_PASSWORD"
-echo "db-password:    $DB_PASSWORD"
+# db-password (32 случайных байта)
+DB_PASSWORD="$(openssl rand -base64 32)"
 
 bao kv put -mount=secret platform/keycloak \
   admin-password="$ADMIN_PASSWORD" \

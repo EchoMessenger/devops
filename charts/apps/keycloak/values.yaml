@@ -38,7 +38,7 @@ postgresql:
   storage:
     size: 8Gi
 
-  existingSecret: keycloak-secrets       # ключи: postgres-password, password
+  existingSecret: keycloak-secrets
   database: keycloak
   username: keycloak
 
