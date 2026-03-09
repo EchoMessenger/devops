@@ -19,6 +19,13 @@ kafka:
     transactionStateLogMinIsr: 1
     # -- Minimum number of in-sync replicas required for a write to be considered successful
     minInsyncReplicas: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
 
 storage:
   # -- Storage type (e.g., 'ephemeral', 'persistent-claim', 'jbod')

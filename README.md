@@ -19,10 +19,20 @@ helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
 
 # Install ESO
-helm install external-secrets \
-  external-secrets/external-secrets \
+helm upgrade external-secrets external-secrets/external-secrets \
   -n external-secrets \
-  --create-namespace
+  --set resources.requests.cpu=50m \
+  --set resources.requests.memory=64Mi \
+  --set resources.limits.cpu=200m \
+  --set resources.limits.memory=256Mi \
+  --set webhook.resources.requests.cpu=10m \
+  --set webhook.resources.requests.memory=32Mi \
+  --set webhook.resources.limits.cpu=100m \
+  --set webhook.resources.limits.memory=128Mi \
+  --set certController.resources.requests.cpu=10m \
+  --set certController.resources.requests.memory=32Mi \
+  --set certController.resources.limits.cpu=100m \
+  --set certController.resources.limits.memory=128Mi \
 
 # Install ClusterSecretStore
 helm install openbao-secretstore ./openbao-secretstore -n external-secrets
@@ -236,8 +246,26 @@ kubectl exec -it -n tinode postgres-0 -- psql -U postgres -d postgres -c "\l"
 Установка cert-manager:
 
 ``` sh
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
-```
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+helm install cert-manager jetstack/cert-manager \
+  -n cert-manager \
+  --create-namespace \
+  --set crds.enabled=true \
+  --set resources.requests.cpu=50m \
+  --set resources.requests.memory=64Mi \
+  --set resources.limits.cpu=200m \
+  --set resources.limits.memory=256Mi \
+  --set webhook.resources.requests.cpu=10m \
+  --set webhook.resources.requests.memory=32Mi \
+  --set webhook.resources.limits.cpu=100m \
+  --set webhook.resources.limits.memory=128Mi \
+  --set cainjector.resources.requests.cpu=10m \
+  --set cainjector.resources.requests.memory=32Mi \
+  --set cainjector.resources.limits.cpu=100m \
+  --set cainjector.resources.limits.memory=128Mi
+  ```
 
 Проверка:
 
