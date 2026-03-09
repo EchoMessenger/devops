@@ -58,3 +58,11 @@ data:
     path "secret/metadata/tinode/*" {
       capabilities = ["create", "read", "update", "delete", "list"]
     }
+
+    # Keycloak
+    path "secret/data/platform/keycloak" {
+      capabilities = ["read"]
+    }
+    path "secret/metadata/platform/keycloak" {
+      capabilities = ["read"]
+    }

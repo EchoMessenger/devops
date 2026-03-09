@@ -257,3 +257,24 @@ kubectl get certificate -n tinode
 kubectl describe certificaterequest -n tinode
 ```
 
+# Keycloak
+
+```sh
+# Create ns
+kubectl create ns keycloak
+
+# Create secret
+kubectl exec openbao-0 -n openbao -it -- sh
+
+## Сгенерировать надёжные пароли
+
+# admin-password (32 случайных байта)
+ADMIN_PASSWORD="$(openssl rand -base64 32)"
+
+# db-password (32 случайных байта)
+DB_PASSWORD="$(openssl rand -base64 32)"
+
+bao kv put -mount=secret platform/keycloak \
+  admin-password="$ADMIN_PASSWORD" \
+  db-password="$DB_PASSWORD"
+```

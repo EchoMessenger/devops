@@ -1,0 +1,55 @@
+global:
+  security:
+    allowInsecureImages: true
+
+keycloak:
+  image:
+    repository: keycloak/keycloak
+    tag: "26.5"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  adminUser: admin
+  existingSecret: keycloak-secrets       # ключ: admin-password
+
+postgresql:
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  storage:
+    size: 8Gi
+
+  existingSecret: keycloak-secrets
+  database: keycloak
+  username: keycloak
+
+ingress:
+  enabled: true
+  host: auth.echo-messenger.ru
+  tlsSecretName: keycloak-tls
+  issuerName: letsencrypt-prod
+
+openbao:
+  clusterSecretStore: openbao-global
+  secrets:
+    keycloak:
+      path: platform/keycloak
