@@ -56,7 +56,13 @@ storage:
 # @section Resource management
 
 # -- Pod resource requests and limits
-resources: {}
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
 
 
 # @section OpenBao configuration

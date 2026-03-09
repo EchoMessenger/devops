@@ -135,7 +135,13 @@ PushSecret нужен, когда секрет рождается в Kubernetes,
 ```sh
 # Install Strimzi 
 helm repo add strimzi https://strimzi.io/charts/
-helm install strimzi-operator strimzi/strimzi-kafka-operator --namespace kafka --create-namespace
+helm upgrade strimzi-operator strimzi/strimzi-kafka-operator \
+  -n kafka \
+  --set resources.requests.cpu=200m \
+  --set resources.requests.memory=256Mi \
+  --set resources.limits.cpu=500m \
+  --set resources.limits.memory=512Mi \
+  
 # Install chart to config Kafka
 helm install kafka ./strimzi -n kafka --create-namespace
 
