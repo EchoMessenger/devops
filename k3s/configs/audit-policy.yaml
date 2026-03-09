@@ -1,0 +1,55 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+# Не сохранять события о получении самих логов аудита (защита от зацикливания)
+omitStages:
+  - "RequestReceived"
+
+rules:
+  # 1. ИСКЛЮЧЕНИЯ (None): Убираем шум от системных компонентов
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+    resources:
+      - group: "" # core API
+        resources: ["endpoints", "services", "services/status"]
+
+  - level: None
+    userGroups: ["system:nodes"]
+    verbs: ["get"]
+    resources:
+      - group: ""
+        resources: ["nodes", "nodes/status"]
+
+  - level: None
+    nonResourceURLs:
+      - "/healthz*"
+      - "/livez*"
+      - "/readyz*"
+      - "/metrics"
+
+  # 2. ВЫСОКИЙ ПРИОРИТЕТ (RequestResponse): Секреты и конфиги
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+      - group: "external-secrets.io" # API External Secrets Operator
+        resources: ["externalsecrets", "clusterexternalsecrets", "secretstores", "clustersecretstores"]
+  # 3. БЕЗОПАСНОСТЬ (Request): Изменение прав доступа
+  - level: Request
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+
+  # 4. АУДИТ ДЕЙСТВИЙ (Request): Создание и удаление критичных ресурсов
+  - level: Request
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+        resources: ["pods", "services", "namespaces"]
+      - group: "apps"
+        resources: ["deployments", "daemonsets", "statefulsets"]
+
+  # 5. ВСЁ ОСТАЛЬНОЕ (Metadata): Для расследования инцидентов
+  - level: Metadata
+    omitStages:
+      - "RequestReceived"

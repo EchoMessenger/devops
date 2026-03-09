@@ -17,6 +17,16 @@ spec:
         {{- include "tinode.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "tinode.serviceAccountName" . }}
+      # Hardening: отключить автомонтирование SA токена
+      automountServiceAccountToken: false
+      # Hardening: pod-level securityContext
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       {{- if .Values.openbao.enabled }}
       imagePullSecrets:
       - name: {{ include "tinode.fullname" . }}-registry
@@ -25,6 +35,16 @@ spec:
       - name: tinode
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        # Hardening: container-level securityContext
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+              - ALL
         ports:
         - name: http
           containerPort: {{ .Values.service.http.targetPort }}
@@ -280,16 +300,45 @@ spec:
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         
-        {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
         volumeMounts:
+        {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
         - name: uploads
           mountPath: {{ .Values.persistence.mountPath }}
         - name: logs
           mountPath: /var/log
         {{- end }}
-      
-      {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
+        # Hardening: рабочая директория заполнена initContainer
+        - name: tinode-workdir
+          mountPath: /opt/tinode
+        - name: botdata
+          mountPath: /botdata
+
+      # Hardening: initContainer копирует бинарники в emptyDir
+      initContainers:
+      - name: copy-tinode-binaries
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop: ["ALL"]
+        command:
+          - sh
+          - -c
+          - |
+            echo "Copying tinode binaries to writable workdir..."
+            cp -r /opt/tinode/. /workdir/
+            echo "Done."
+        volumeMounts:
+        - name: tinode-workdir
+          mountPath: /workdir
+
       volumes:
+      {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
       - name: uploads
         persistentVolumeClaim:
           claimName: {{ include "tinode.fullname" . }}-uploads
@@ -297,6 +346,14 @@ spec:
         persistentVolumeClaim:
           claimName: tinode-logs
       {{- end }}
+
+      - name: tinode-workdir
+        emptyDir:
+          sizeLimit: 128Mi
+      - name: botdata
+        emptyDir:
+          medium: Memory
+          sizeLimit: 1Mi
       
       {{- with .Values.nodeSelector }}
       nodeSelector:
