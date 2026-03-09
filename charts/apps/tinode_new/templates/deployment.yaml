@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       {{- if .Values.openbao.enabled }}
       imagePullSecrets:
-      - name: ghcr-secret
+      - name: {{ include "tinode.fullname" . }}-ghcr
       {{- end }}
       containers:
       - name: tinode
