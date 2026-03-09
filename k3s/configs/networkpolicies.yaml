@@ -372,7 +372,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: openbao
+      app.kubernetes.io/name: openbao-core
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
@@ -382,23 +382,38 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: openbao
+              app.kubernetes.io/name: openbao-core
       ports:
         - port: 8201
   egress:
+    # 1. Репликация
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: openbao
+              app.kubernetes.io/name: openbao-core
       ports:
         - port: 8201
+
+    # 2. DNS (Упростили: разрешаем во все стороны, это стандарт для DNS)
     - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
+        - namespaceSelector: {}
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
+
+    # 3. Kubernetes API
+    - to:
+        - ipBlock:
+            cidr: 10.43.0.1/32
+        - ipBlock:
+            cidr: 10.129.0.24/32
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CERT-MANAGER namespace

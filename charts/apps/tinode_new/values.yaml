@@ -4,6 +4,23 @@ image:
   tag: latest-amd64
   pullPolicy: Always
 
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop: ["ALL"]
+
+automountServiceAccountToken: false
+
 # OpenBao интеграция через External Secrets Operator
 openbao:
   enabled: true
