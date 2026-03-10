@@ -13,7 +13,7 @@ service:
 kafka:
   name: kafka
   bootstrapServers: kafka-kafka-bootstrap:9092
-  username: nikita
+  username: user
   securityProtocol: SASL_PLAINTEXT
   saslMechanism: SCRAM-SHA-512
 
