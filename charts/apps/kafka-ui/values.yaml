@@ -22,3 +22,7 @@ openbao:
   role: "router"
   secretsPath: "kafka"
   resyncInterval: "10s"
+
+ingress:
+  enabled: true
+  domain: kafka.echo-messenger.ru
