@@ -68,33 +68,15 @@ metadata:
 spec:
   podSelector: {}
   policyTypes: [Ingress, Egress]
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-all
-  namespace: tasks
-spec:
-  podSelector: {}
-  policyTypes: [Ingress, Egress]
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-all
-  namespace: tasktracker
-spec:
-  podSelector: {}
-  policyTypes: [Ingress, Egress]
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-all
-  namespace: kubescape
-spec:
-  podSelector: {}
-  policyTypes: [Ingress, Egress]
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: default-deny-all
+#   namespace: tasktracker
+# spec:
+#   podSelector: {}
+#   policyTypes: [Ingress, Egress]
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TINODE namespace
@@ -207,6 +189,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -233,6 +217,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -262,6 +248,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
 
 # ══════════════════════════════════════════════════════════════════════════════
 # KEYCLOAK namespace
@@ -305,20 +293,13 @@ spec:
       ports:
         - port: 80
         - port: 8080
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: tasks
-      ports:
-        - port: 80
-        - port: 8080
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: tasktracker
-      ports:
-        - port: 80
-        - port: 8080
+    # - from:
+    #     - namespaceSelector:
+    #         matchLabels:
+    #           kubernetes.io/metadata.name: tasktracker
+    #   ports:
+    #     - port: 80
+    #     - port: 8080
   egress:
     - to:
         - podSelector:
@@ -376,7 +357,21 @@ spec:
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
-        - namespaceSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: external-secrets
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: keycloak
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cert-manager
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openbao
       ports:
         - port: 8200
     - from:
@@ -404,6 +399,11 @@ spec:
           protocol: TCP
 
     # 3. Kubernetes API
+    # TODO: migrate to Helm - replace with {{ .Values.apiserver.clusterIP }} and {{ .Values.apiserver.nodeIP }}
+    # Current values: 10.43.0.1 (kube-apiserver ClusterIP), 10.129.0.24 (node IP)
+    # To find values for a new cluster:
+    #   kubectl get svc kubernetes -n default -o jsonpath='{.spec.clusterIP}'
+    #   kubectl get node -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
@@ -499,6 +499,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MONITORING namespace
@@ -544,6 +546,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
         - port: 10250
 ---
 apiVersion: networking.k8s.io/v1
@@ -581,6 +585,8 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -611,6 +617,28 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-apiserver
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.43.0.1/32
+        - ipBlock:
+            cidr: 10.129.0.24/32
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ROUTER namespace
@@ -644,18 +672,12 @@ spec:
       ports:
         - port: 80
         - port: 8080
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: tasks
-      ports:
-        - port: 8000
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: tasktracker
-      ports:
-        - port: 8000
+    # - to:
+    #     - namespaceSelector:
+    #         matchLabels:
+    #           kubernetes.io/metadata.name: tasktracker
+    #   ports:
+    #     - port: 8000
     - to:
         - namespaceSelector:
             matchLabels:
@@ -663,187 +685,80 @@ spec:
       ports:
         - port: 53
           protocol: UDP
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TASKS namespace
-# Labels: app.kubernetes.io/name=tasktracker, app.kubernetes.io/name=tasktracker-postgres
-#         app.kubernetes.io/instance=tasks (отличает от tasktracker namespace)
-# ══════════════════════════════════════════════════════════════════════════════
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-tasks-app
-  namespace: tasks
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: tasktracker
-      app.kubernetes.io/instance: tasks
-  policyTypes: [Ingress, Egress]
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: router
-      ports:
-        - port: 8000
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: tasktracker-postgres
-              app.kubernetes.io/instance: tasks
-      ports:
-        - port: 5432
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kafka
-      ports:
-        - port: 9092
-        - port: 9093
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: keycloak
-      ports:
-        - port: 80
-        - port: 8080
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
         - port: 53
-          protocol: UDP
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-tasks-postgres
-  namespace: tasks
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: tasktracker-postgres
-      app.kubernetes.io/instance: tasks
-  policyTypes: [Ingress]
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: tasktracker
-              app.kubernetes.io/instance: tasks
-      ports:
-        - port: 5432
+          protocol: TCP
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TASKTRACKER namespace
 # Labels: app.kubernetes.io/name=tasktracker, app.kubernetes.io/instance=tasktracker
 # ══════════════════════════════════════════════════════════════════════════════
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-tasktracker-app
-  namespace: tasktracker
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: tasktracker
-      app.kubernetes.io/instance: tasktracker
-  policyTypes: [Ingress, Egress]
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: router
-      ports:
-        - port: 8000
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: tasktracker-postgres
-              app.kubernetes.io/instance: tasktracker
-      ports:
-        - port: 5432
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kafka
-      ports:
-        - port: 9092
-        - port: 9093
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: keycloak
-      ports:
-        - port: 80
-        - port: 8080
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
-        - port: 53
-          protocol: UDP
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-tasktracker-postgres
-  namespace: tasktracker
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: tasktracker-postgres
-      app.kubernetes.io/instance: tasktracker
-  policyTypes: [Ingress]
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: tasktracker
-              app.kubernetes.io/instance: tasktracker
-      ports:
-        - port: 5432
-
-# ══════════════════════════════════════════════════════════════════════════════
-# KUBESCAPE namespace
-# ══════════════════════════════════════════════════════════════════════════════
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-kubescape
-  namespace: kubescape
-spec:
-  podSelector: {}
-  policyTypes: [Ingress, Egress]
-  ingress:
-    - from:
-        - namespaceSelector: {}
-      ports:
-        - port: 443
-        - port: 8080
-        - port: 4002
-  egress:
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 169.254.169.254/32
-      ports:
-        - port: 443
-        - port: 6443
-        - port: 8080
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
-        - port: 53
-          protocol: UDP
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-tasktracker-app
+#   namespace: tasktracker
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: tasktracker
+#       app.kubernetes.io/instance: tasktracker
+#   policyTypes: [Ingress, Egress]
+#   ingress:
+#     - from:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: router
+#       ports:
+#         - port: 8000
+#   egress:
+#     - to:
+#         - podSelector:
+#             matchLabels:
+#               app.kubernetes.io/name: tasktracker-postgres
+#               app.kubernetes.io/instance: tasktracker
+#       ports:
+#         - port: 5432
+#     - to:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: kafka
+#       ports:
+#         - port: 9092
+#         - port: 9093
+#     - to:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: keycloak
+      # ports:
+#         - port: 80
+#         - port: 8080
+#     - to:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: kube-system
+      # ports:
+      #   - port: 53
+      #     protocol: UDP
+      #   - port: 53
+      #     protocol: TCP
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-tasktracker-postgres
+#   namespace: tasktracker
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: tasktracker-postgres
+#       app.kubernetes.io/instance: tasktracker
+#   policyTypes: [Ingress]
+#   ingress:
+#     - from:
+#         - podSelector:
+#             matchLabels:
+#               app.kubernetes.io/name: tasktracker
+#               app.kubernetes.io/instance: tasktracker
+#       ports:
+#         - port: 5432

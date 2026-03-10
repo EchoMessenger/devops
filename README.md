@@ -19,7 +19,7 @@ helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
 
 # Install ESO
-helm upgrade external-secrets external-secrets/external-secrets \
+helm install external-secrets external-secrets/external-secrets \
   -n external-secrets \
   --set resources.requests.cpu=50m \
   --set resources.requests.memory=64Mi \
@@ -135,7 +135,7 @@ PushSecret нужен, когда секрет рождается в Kubernetes,
 ```sh
 # Install Strimzi 
 helm repo add strimzi https://strimzi.io/charts/
-helm upgrade strimzi-operator strimzi/strimzi-kafka-operator \
+helm install strimzi-operator strimzi/strimzi-kafka-operator \
   -n kafka \
   --set resources.requests.cpu=200m \
   --set resources.requests.memory=256Mi \

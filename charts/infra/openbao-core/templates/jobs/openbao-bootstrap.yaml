@@ -95,39 +95,6 @@ spec:
                 echo "Kubernetes auth already enabled"
               fi
 
-              # Configure Kubernetes auth
-              echo "Configuring Kubernetes auth..."
-
-              K8S_HOST="https://kubernetes.default.svc"
-              K8S_CA_CERT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
-              K8S_ISSUER="https://kubernetes.default.svc.cluster.local"
-
-              K8S_CONFIG=$(jq -n \
-                --arg host "$K8S_HOST" \
-                --arg ca "$K8S_CA_CERT" \
-                --arg iss "$K8S_ISSUER" \
-                '{
-                  kubernetes_host: $host, 
-                  kubernetes_ca_cert: $ca,
-                  issuer: $iss,
-                  disable_iss_validation: false,
-                  disable_local_ca_jwt: false
-                }')
-
-              RESULT=$(curl -s -X POST \
-                -H "X-Vault-Token: $ROOT_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$K8S_CONFIG" \
-                $BAO_ADDR/v1/auth/kubernetes/config)
-
-              if echo "$RESULT" | jq -e .errors >/dev/null 2>&1; then
-                echo "ERROR: Kubernetes auth configuration failed!"
-                echo "$RESULT" | jq .
-                exit 1
-              fi
-
-              echo "Kubernetes auth configured"
-
               # 6. Create Policies
               echo ""
               echo "=== Creating Policies ==="
@@ -160,13 +127,18 @@ spec:
               curl -s -H "X-Vault-Token: $ROOT_TOKEN" -X POST \
                 -d '{"type":"kubernetes"}' $BAO_ADDR/v1/sys/auth/kubernetes > /dev/null 2>&1 || true
 
-              # Сама настройка с ISSUER
-              BAO_K8S_CONFIG=$(jq -n --arg iss "https://kubernetes.default.svc.cluster.local" '{
-                kubernetes_host: "https://kubernetes.default.svc",
-                issuer: $iss,
-                disable_iss_validation: false,
-                disable_local_ca_jwt: false
-              }')
+              K8S_CA_CERT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt)
+              
+              BAO_K8S_CONFIG=$(jq -n \
+                --arg ca "$K8S_CA_CERT" \
+                --arg iss "https://kubernetes.default.svc.cluster.local" \
+                '{
+                  kubernetes_ca_cert: $ca,
+                  kubernetes_host: "https://kubernetes.default.svc",
+                  issuer: $iss,
+                  disable_iss_validation: false,
+                  disable_local_ca_jwt: false
+                }')
 
               RESULT=$(curl -s -X POST \
                 -H "X-Vault-Token: $ROOT_TOKEN" \
