@@ -13,7 +13,7 @@ spec:
       labels:
         app: kafka-ui
       annotations:
-        checksum/secret: {{ include (print $.Template.BasePath "/external-secret.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/externalsecrets.yaml") . | sha256sum }}
     spec:
       containers:
         - name: kafka-ui
