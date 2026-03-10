@@ -668,6 +668,13 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: kafka
+      ports:
+        - port: 9092
+        - port: 9093
+    - to:
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: keycloak
       ports:
         - port: 80
