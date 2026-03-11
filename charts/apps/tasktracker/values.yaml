@@ -1,5 +1,5 @@
 image:
-  repository: "ghcr.io/yooondooo/tasktracker"
+  repository: "ghcr.io/echomessenger/tasktracker"
   tag: "latest"
   pullPolicy: "Always"
 
