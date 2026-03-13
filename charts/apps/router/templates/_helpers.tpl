@@ -20,8 +20,26 @@ Create a default fully qualified app name.
 Common labels
 */}}
 {{- define "router.labels" -}}
+helm.sh/chart: {{ include "router.chart" . }}
+{{ include "router.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "router.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "router.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/version: {{ .Chart.AppVersion }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
+app: router
+{{- end }}
+
+{{/*
+Chart name
+*/}}
+{{- define "router.chart" -}}
+{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end }}
