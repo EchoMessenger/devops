@@ -38,36 +38,142 @@ storage:
 
 # -- List of KafkaTopic resources to create
 topics:
-  - name: tinode.ctrl
-    partitions: 1
+  # Сообщения пользователей - самый нагруженный
+  - name: tinode.firehose.messages
+    partitions: 10
     replicas: 1
-  - name: tinode.data
+    retention: "604800000"      # 7 дней
+    compression: snappy
+    
+  # Аутентификация - важно для аудита безопасности
+  - name: tinode.firehose.auth
     partitions: 3
     replicas: 1
-  - name: tinode.pres
+    retention: "2592000000"     # 30 дней
+    compression: snappy
+    
+  # Управление аккаунтами (регистрация, изменение профиля)
+  - name: tinode.firehose.account-mgmt
     partitions: 3
     replicas: 1
-  - name: tinode.meta
-    partitions: 1
+    retention: "2592000000"     # 30 дней
+    compression: snappy
+    
+  # Подписки на топики (sub/leave)
+  - name: tinode.firehose.subscriptions
+    partitions: 5
     replicas: 1
-  - name: tinode.info
-    partitions: 1
+    retention: "604800000"      # 7 дней
+    compression: snappy
+    
+  # Handshake (hi) - начало сессий
+  - name: tinode.firehose.handshake
+    partitions: 3
     replicas: 1
-  - name: tinode.topic-events
-    partitions: 1
+    retention: "259200000"      # 3 дня
+    compression: snappy
+    
+  # Запросы данных (get)
+  - name: tinode.firehose.queries
+    partitions: 3
     replicas: 1
+    retention: "86400000"       # 1 день
+    compression: snappy
+    
+  # Обновления (set)
+  - name: tinode.firehose.updates
+    partitions: 3
+    replicas: 1
+    retention: "604800000"      # 7 дней
+    compression: snappy
+    
+  # Удаления - важно для compliance
+  - name: tinode.firehose.deletions
+    partitions: 3
+    replicas: 1
+    retention: "31536000000"    # 365 дней
+    compression: snappy
+    
+  # Уведомления (read/recv/typing)
+  - name: tinode.firehose.notifications
+    partitions: 5
+    replicas: 1
+    retention: "86400000"       # 1 день
+    compression: snappy
+
+  # ============================================
+  # Server events - CRUD события (уже есть)
+  # ============================================
+  
   - name: tinode.account-events
-    partitions: 1
-    replicas: 1
-  - name: tinode.subscription-events
-    partitions: 1
-    replicas: 1
-  - name: tinode.message-events
     partitions: 3
     replicas: 1
-  - name: tinode.dlq
-    partitions: 1
+    retention: "2592000000"     # 30 дней
+    compression: snappy
+    
+  - name: tinode.topic-events
+    partitions: 3
     replicas: 1
+    retention: "2592000000"     # 30 дней
+    compression: snappy
+    
+  - name: tinode.subscription-events
+    partitions: 5
+    replicas: 1
+    retention: "604800000"      # 7 дней
+    compression: snappy
+    
+  - name: tinode.message-events
+    partitions: 10
+    replicas: 1
+    retention: "604800000"      # 7 дней
+    compression: snappy
+
+  # ============================================
+  # Серверные ответы (если включишь в fireHose)
+  # ============================================
+  
+  - name: tinode.server.data
+    partitions: 10
+    replicas: 1
+    retention: "604800000"      # 7 дней
+    compression: snappy
+    
+  - name: tinode.server.meta
+    partitions: 3
+    replicas: 1
+    retention: "259200000"      # 3 дня
+    compression: snappy
+    
+  - name: tinode.server.pres
+    partitions: 5
+    replicas: 1
+    retention: "86400000"       # 1 день
+    compression: snappy
+    
+  - name: tinode.server.info
+    partitions: 3
+    replicas: 1
+    retention: "86400000"       # 1 день
+    compression: snappy
+
+  # ============================================
+  # Служебные топики
+  # ============================================
+  
+  # Dead Letter Queue - неудачные сообщения
+  - name: tinode.dlq
+    partitions: 3
+    replicas: 1
+    retention: "2592000000"     # 30 дней
+    compression: snappy
+    
+  # Поисковые запросы (если включишь Find)
+  - name: tinode.search-queries
+    partitions: 3
+    replicas: 1
+    retention: "604800000"      # 7 дней
+    compression: snappy
 
 user:
   # -- Name of the KafkaUser resource

@@ -1,13 +1,37 @@
 {{- range .Values.topics }}
-apiVersion: kafka.strimzi.io/v1
+apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
   name: {{ .name }}
   namespace: {{ $.Values.kafka.namespace }}
   labels:
     strimzi.io/cluster: {{ $.Values.kafka.name }}
+    app.kubernetes.io/part-of: tinode
+    app.kubernetes.io/component: messaging
 spec:
   partitions: {{ .partitions }}
   replicas: {{ .replicas }}
+  config:
+    {{- if .retention }}
+    retention.ms: {{ .retention | quote }}
+    {{- else }}
+    retention.ms: "604800000"  # 7 дней по умолчанию
+    {{- end }}
+    {{- if .compression }}
+    compression.type: {{ .compression }}
+    {{- else }}
+    compression.type: snappy
+    {{- end }}
+    {{- if .cleanup }}
+    cleanup.policy: {{ .cleanup }}
+    {{- else }}
+    cleanup.policy: delete
+    {{- end }}
+    {{- if .maxMessageBytes }}
+    max.message.bytes: {{ .maxMessageBytes | quote }}
+    {{- end }}
+    {{- if .minInsyncReplicas }}
+    min.insync.replicas: {{ .minInsyncReplicas | quote }}
+    {{- end }}
 ---
 {{- end }}
