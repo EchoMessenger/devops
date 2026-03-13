@@ -1,7 +1,7 @@
 image:
   repository: ghcr.io/echomessenger/tinode-router
   tag: latest-amd64
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 replicaCount: 1
 
