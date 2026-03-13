@@ -19,8 +19,6 @@ spec:
       imagePullSecrets:
         - name: ghcr-secret
       
-      serviceAccountName: {{ include "router.fullname" . }}
-      
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
