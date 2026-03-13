@@ -286,10 +286,12 @@ spec:
           value: {{ .Values.plugins.router.filters.fireHose | quote }}
         - name: PLUGIN_ROUTER_FILTER_ACCOUNT
           value: {{ .Values.plugins.router.filters.account | quote }}
-        - name: PLUGIN_ROUTER_FILTER_MSG
-          value: {{ .Values.plugins.router.filters.msg | quote }}
-        - name: PLUGIN_ROUTER_FILTER_SUB
-          value: {{ .Values.plugins.router.filters.sub | quote }}
+        - name: PLUGIN_ROUTER_FILTER_MESSAGE
+          value: {{ .Values.plugins.router.filters.message | quote }}
+        - name: PLUGIN_ROUTER_FILTER_SUBSCRIPTION
+          value: {{ .Values.plugins.router.filters.subscription | quote }}
+        - name: PLUGIN_ROUTER_FILTER_TOPIC
+          value: {{ .Values.plugins.router.filters.topic | quote }}
         {{- end }}
         
         # Дополнительные переменные

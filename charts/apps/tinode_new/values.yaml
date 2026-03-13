@@ -192,10 +192,11 @@ plugins:
     failureCode: 0
     failureText: "ERR | router | Router has failed. Continuing..."
     filters:
-      fireHose: "pub,sub,leave,hi,acc,login,get,set,del,note"
+      fireHose: "pub,sub,leave,hi,acc,login,get,set,del,note,data,meta,pres,info"
       account: "CRUD"
-      msg: "CRUD"
-      sub: "CRUD"
+      message: "CRUD"
+      subscription: "CRUD"
+      topic: "CRUD"
 
 # Ресурсы подов
 resources:
