@@ -183,6 +183,19 @@ cluster:
     - name: "tinode-2"
       addr: "tinode-2:12002"
 
+plugins:
+  router:
+    enabled: true
+    name: "router"
+    timeout: 20000
+    serviceAddr: "grpc://router-router.router.svc.cluster.local:7911"
+    failureCode: 0
+    failureText: "ERR | router | Router has failed. Continuing..."
+    filters:
+      account: "CRUD"
+      msg: "CRUD"
+      sub: "CRUD"
+
 # Ресурсы подов
 resources:
   limits:
