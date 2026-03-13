@@ -282,6 +282,8 @@ spec:
           value: {{ .Values.plugins.router.failureCode | quote }}
         - name: PLUGIN_ROUTER_FAILURE_TEXT
           value: {{ .Values.plugins.router.failureText | quote }}
+        - name: PLUGIN_ROUTER_FILTER_FIREHOSE
+          value: {{ .Values.plugins.router.filters.fireHose | quote }}
         - name: PLUGIN_ROUTER_FILTER_ACCOUNT
           value: {{ .Values.plugins.router.filters.account | quote }}
         - name: PLUGIN_ROUTER_FILTER_MSG
