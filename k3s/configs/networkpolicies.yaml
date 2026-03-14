@@ -96,6 +96,7 @@ spec:
       app.kubernetes.io/name: tinode
   policyTypes: [Ingress, Egress]
   ingress:
+    # От Traefik (WebSocket/HTTP напрямую)
     - from:
         - namespaceSelector:
             matchLabels:
@@ -103,6 +104,16 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
+      ports:
+        - port: 6060
+        - port: 16060
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: webapp
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: webapp
       ports:
         - port: 6060
         - port: 16060
@@ -127,6 +138,12 @@ spec:
       ports:
         - port: 80
         - port: 8080
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: router
+      ports:
+        - port: 7911
     - to:
         - namespaceSelector:
             matchLabels:

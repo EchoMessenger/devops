@@ -267,6 +267,32 @@ spec:
         - name: CLUSTER_SELF
           value: {{ .Values.cluster.selfName | quote }}
         {{- end }}
+
+                # Plugin Router
+        {{- if .Values.plugins.router.enabled }}
+        - name: PLUGIN_ROUTER_ENABLED
+          value: {{ .Values.plugins.router.enabled | quote }}
+        - name: PLUGIN_ROUTER_NAME
+          value: {{ .Values.plugins.router.name | quote }}
+        - name: PLUGIN_ROUTER_TIMEOUT
+          value: {{ .Values.plugins.router.timeout | quote }}
+        - name: PLUGIN_ROUTER_SERVICE_ADDR
+          value: {{ .Values.plugins.router.serviceAddr | quote }}
+        - name: PLUGIN_ROUTER_FAILURE_CODE
+          value: {{ .Values.plugins.router.failureCode | quote }}
+        - name: PLUGIN_ROUTER_FAILURE_TEXT
+          value: {{ .Values.plugins.router.failureText | quote }}
+        - name: PLUGIN_ROUTER_FILTER_FIREHOSE
+          value: {{ .Values.plugins.router.filters.fireHose | quote }}
+        - name: PLUGIN_ROUTER_FILTER_ACCOUNT
+          value: {{ .Values.plugins.router.filters.account | quote }}
+        - name: PLUGIN_ROUTER_FILTER_MESSAGE
+          value: {{ .Values.plugins.router.filters.message | quote }}
+        - name: PLUGIN_ROUTER_FILTER_SUBSCRIPTION
+          value: {{ .Values.plugins.router.filters.subscription | quote }}
+        - name: PLUGIN_ROUTER_FILTER_TOPIC
+          value: {{ .Values.plugins.router.filters.topic | quote }}
+        {{- end }}
         
         # Дополнительные переменные
         {{- range .Values.extraEnv }}

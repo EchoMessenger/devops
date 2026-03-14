@@ -1,0 +1,288 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# KAFKA namespace - DEFAULT DENY
+# Strimzi создаёт свои политики, но нужен default deny для остальных подов
+# ══════════════════════════════════════════════════════════════════════════════
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: default-deny-all
+#   namespace: kafka
+# spec:
+#   podSelector: {}
+#   policyTypes: [Ingress, Egress]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# KAFKA UI
+# ══════════════════════════════════════════════════════════════════════════════
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kafka-ui
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka-ui
+  policyTypes: [Ingress, Egress]
+  
+  ingress:
+    # От Traefik (Ingress Controller) - для Web UI
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - port: 8080
+          protocol: TCP
+    
+    # От Prometheus (метрики) - опционально
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8080
+          protocol: TCP
+
+  egress:
+    # К Kafka брокерам в namespace kafka
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kafka
+          podSelector:
+            matchLabels:
+              strimzi.io/name: kafka-kafka
+      ports:
+        - port: 9092
+          protocol: TCP
+        - port: 9093
+          protocol: TCP
+    
+    # DNS (CoreDNS)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STRIMZI CLUSTER OPERATOR
+# Управляет Kafka CR, нужен доступ к API и подам
+# ══════════════════════════════════════════════════════════════════════════════
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-strimzi-operator
+#   namespace: kafka
+# spec:
+#   podSelector:
+#     matchLabels:
+#       name: strimzi-cluster-operator
+#   policyTypes: [Ingress, Egress]
+#   ingress:
+#     # Webhooks от API server
+#     - from:
+#         - ipBlock:
+#             cidr: 10.43.0.1/32
+#         - ipBlock:
+#             cidr: 10.129.0.24/32
+#       ports:
+#         - port: 8080
+#         - port: 8443
+#   egress:
+#     # К Kafka подам (управление)
+#     - to:
+#         - podSelector:
+#             matchLabels:
+#               strimzi.io/cluster: kafka
+#       ports:
+#         - port: 9090
+#         - port: 9091
+#         - port: 8443
+#     # Kubernetes API
+#     - to:
+#         - ipBlock:
+#             cidr: 10.43.0.1/32
+#         - ipBlock:
+#             cidr: 10.129.0.24/32
+#       ports:
+#         - port: 443
+#           protocol: TCP
+#         - port: 6443
+#           protocol: TCP
+#     # DNS
+#     - to:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: kube-system
+#       ports:
+#         - port: 53
+#           protocol: UDP
+#         - port: 53
+#           protocol: TCP
+
+# ══════════════════════════════════════════════════════════════════════════════
+# KAFKA BROKERS (дополнение к Strimzi policy)
+# Strimzi создаёт базовую политику, добавляем разрешения от внешних namespaces
+# ══════════════════════════════════════════════════════════════════════════════
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-kafka-external-clients
+#   namespace: kafka
+# spec:
+#   podSelector:
+#     matchLabels:
+#       strimzi.io/name: kafka-kafka
+#   policyTypes: [Ingress, Egress]
+#   ingress:
+#     # От Kafka UI
+#     - from:
+#         - podSelector:
+#             matchLabels:
+#               app: kafka-ui
+#       ports:
+#         - port: 9092
+#         - port: 9093
+#     # От Tinode
+#     - from:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: tinode
+#       ports:
+#         - port: 9092
+#         - port: 9093
+#     # От Router
+#     - from:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: router
+#       ports:
+#         - port: 9092
+#         - port: 9093
+#     # От Strimzi operator (health checks)
+#     - from:
+#         - podSelector:
+#             matchLabels:
+#               name: strimzi-cluster-operator
+#       ports:
+#         - port: 9090
+#         - port: 9091
+#         - port: 8443
+#     # От Entity operator
+#     - from:
+#         - podSelector:
+#             matchLabels:
+#               strimzi.io/name: kafka-entity-operator
+#       ports:
+#         - port: 9090
+#         - port: 9091
+#     # Между брокерами (controller/replication) - KRaft
+#     - from:
+#         - podSelector:
+#             matchLabels:
+#               strimzi.io/name: kafka-kafka
+#       ports:
+#         - port: 9090
+#         - port: 9091
+#   egress:
+#     # Между брокерами (KRaft consensus)
+#     - to:
+#         - podSelector:
+#             matchLabels:
+#               strimzi.io/name: kafka-kafka
+#       ports:
+#         - port: 9090
+#         - port: 9091
+#     # DNS
+#     - to:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: kube-system
+#       ports:
+#         - port: 53
+#           protocol: UDP
+#         - port: 53
+#           protocol: TCP
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ENTITY OPERATOR
+# Управляет topics и users
+# ══════════════════════════════════════════════════════════════════════════════
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-entity-operator
+#   namespace: kafka
+# spec:
+#   podSelector:
+#     matchLabels:
+#       strimzi.io/name: kafka-entity-operator
+#   policyTypes: [Ingress, Egress]
+#   ingress:
+#     # Health checks от kubelet
+#     - ports:
+#         - port: 8080
+#         - port: 8081
+#   egress:
+#     # К Kafka брокерам
+#     - to:
+#         - podSelector:
+#             matchLabels:
+#               strimzi.io/name: kafka-kafka
+#       ports:
+#         - port: 9090
+#         - port: 9091
+#     # Kubernetes API (для управления KafkaTopic/KafkaUser CRs)
+#     - to:
+#         - ipBlock:
+#             cidr: 10.43.0.1/32
+#         - ipBlock:
+#             cidr: 10.129.0.24/32
+#       ports:
+#         - port: 443
+#           protocol: TCP
+#         - port: 6443
+#           protocol: TCP
+#     # DNS
+#     - to:
+#         - namespaceSelector:
+#             matchLabels:
+#               kubernetes.io/metadata.name: kube-system
+#       ports:
+#         - port: 53
+#           protocol: UDP
+#         - port: 53
+#           protocol: TCP
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: allow-http01-solver
+#   namespace: kafka
+# spec:
+#   podSelector:
+#     matchLabels:
+#       acme.cert-manager.io/http01-solver: "true"
+#   policyTypes:
+#   - Ingress
+#   ingress:
+#   - from:
+#     - ipBlock:
+#         cidr: 0.0.0.0/0
+#     ports:
+#     - protocol: TCP
+#       port: 8089

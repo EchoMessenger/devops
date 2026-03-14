@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kafka-ui
-  namespace: kafka
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         app: kafka-ui
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/externalsecrets.yaml") . | sha256sum }}
     spec:
       containers:
         - name: kafka-ui
@@ -35,4 +37,4 @@ spec:
                   key: sasl_jaas_config
           envFrom:
             - secretRef:
-                name: kafka-ui-password
+                name: kafka-ui-secret

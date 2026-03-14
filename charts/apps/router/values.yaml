@@ -1,13 +1,21 @@
 image:
   repository: ghcr.io/echomessenger/tinode-router
   tag: latest-amd64
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 replicaCount: 1
 
 service:
   port: 7911
   healthPort: 8090
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "256Mi"
+    cpu: "500m"
 
 kafka:
   brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
@@ -29,3 +37,7 @@ openbao:
   role: "router"
   secretsPath: "kafka"
   resyncInterval: "10s"
+
+nodeSelector: {}
+affinity: {}
+tolerations: []
