@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickhouse.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "clickhouse.labels" . | nindent 4 }}
+data:
+  config.xml: |
+    <?xml version="1.0"?>
+    <clickhouse>
+        <logger>
+            <level>{{ .Values.clickhouse.config.logger.level }}</level>
+            <console>1</console>
+        </logger>
+
+        <http_port>{{ .Values.clickhouse.config.http_port }}</http_port>
+        <tcp_port>{{ .Values.clickhouse.config.tcp_port }}</tcp_port>
+        <mysql_port>{{ .Values.clickhouse.config.mysql_port }}</mysql_port>
+        <postgresql_port>{{ .Values.clickhouse.config.postgresql_port }}</postgresql_port>
+        <interserver_http_port>{{ .Values.clickhouse.config.interserver_http_port }}</interserver_http_port>
+
+        <listen_host>::</listen_host>
+        <listen_host>0.0.0.0</listen_host>
+
+        <max_connections>{{ .Values.clickhouse.config.max_connections }}</max_connections>
+        <keep_alive_timeout>{{ .Values.clickhouse.config.keep_alive_timeout }}</keep_alive_timeout>
+        <max_concurrent_queries>{{ .Values.clickhouse.config.max_concurrent_queries }}</max_concurrent_queries>
+
+        <uncompressed_cache_size>{{ .Values.clickhouse.config.uncompressed_cache_size }}</uncompressed_cache_size>
+        <mark_cache_size>{{ .Values.clickhouse.config.mark_cache_size }}</mark_cache_size>
+
+        <path>{{ .Values.clickhouse.config.path }}</path>
+        <tmp_path>{{ .Values.clickhouse.config.tmp_path }}</tmp_path>
+        <user_files_path>{{ .Values.clickhouse.config.user_files_path }}</user_files_path>
+        <format_schema_path>{{ .Values.clickhouse.config.format_schema_path }}</format_schema_path>
+
+        <default_database>{{ .Values.clickhouse.defaultDatabase }}</default_database>
+
+        {{- if .Values.clickhouse.zookeeper.enabled }}
+        <zookeeper>
+            {{- range .Values.clickhouse.zookeeper.nodes }}
+            <node>
+                <host>{{ .host }}</host>
+                <port>{{ .port }}</port>
+            </node>
+            {{- end }}
+            <session_timeout_ms>{{ .Values.clickhouse.zookeeper.session_timeout_ms }}</session_timeout_ms>
+            <operation_timeout_ms>{{ .Values.clickhouse.zookeeper.operation_timeout_ms }}</operation_timeout_ms>
+        </zookeeper>
+        {{- end }}
+
+        <merge_tree>
+            <replicated_deduplication_window>{{ .Values.clickhouse.mergeTree.replicated_deduplication_window }}</replicated_deduplication_window>
+            <replicated_deduplication_window_seconds>{{ .Values.clickhouse.mergeTree.replicated_deduplication_window_seconds }}</replicated_deduplication_window_seconds>
+            <max_suspicious_broken_parts>{{ .Values.clickhouse.mergeTree.max_suspicious_broken_parts }}</max_suspicious_broken_parts>
+            <max_parts_in_total>{{ .Values.clickhouse.mergeTree.max_parts_in_total }}</max_parts_in_total>
+        </merge_tree>
+    </clickhouse>

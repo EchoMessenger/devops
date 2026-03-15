@@ -1,0 +1,75 @@
+{{- $fullname := include "clickhouse.fullname" . -}}
+
+ClickHouse has been deployed!
+
+Connection Details:
+======================
+
+HTTP Interface:
+  URL: http://{{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}
+
+Native Protocol:
+  Host: {{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local
+  Port: {{ .Values.service.tcpPort }}
+
+MySQL Protocol:
+  Host: {{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local
+  Port: {{ .Values.service.mysqlPort }}
+
+PostgreSQL Protocol:
+  Host: {{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local
+  Port: {{ .Values.service.postgresqlPort }}
+
+Credentials:
+===============
+
+{{- if .Values.externalSecret.enabled }}
+Credentials are managed by ExternalSecret from OpenBao.
+Secret name: {{ $fullname }}-external-credentials
+{{- else }}
+Default user: {{ .Values.clickhouse.defaultUser }}
+
+To get the password:
+  kubectl get secret {{ $fullname }}-credentials -n {{ .Release.Namespace }} -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d
+{{- end }}
+
+{{- if .Values.pushSecret.enabled }}
+
+PushSecret Status:
+=====================
+Secrets are being pushed to OpenBao at: {{ .Values.pushSecret.remotePath }}
+Check status: kubectl get pushsecret {{ $fullname }}-pushsecret -n {{ .Release.Namespace }}
+{{- end }}
+
+Quick Test:
+==============
+
+# Port-forward HTTP interface
+kubectl port-forward svc/{{ $fullname }} 8123:{{ .Values.service.httpPort }} -n {{ .Release.Namespace }}
+
+# Test connection
+curl "http://localhost:8123/ping"
+
+# Query via HTTP
+curl "http://localhost:8123/?query=SELECT%201"
+
+# With authentication
+export CLICKHOUSE_PASSWORD=$(kubectl get secret {{ include "clickhouse.credentialsSecretName" . }} -n {{ .Release.Namespace }} -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d)
+curl "http://{{ .Values.clickhouse.defaultUser }}:${CLICKHOUSE_PASSWORD}@localhost:8123/?query=SHOW%20DATABASES"
+
+{{- if .Values.clickhouse.users }}
+
+Additional Users:
+====================
+{{- range .Values.clickhouse.users }}
+  - {{ .name }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.clickhouse.cluster.enabled }}
+
+Cluster Configuration:
+=========================
+Cluster name: {{ .Values.clickhouse.cluster.name }}
+Number of shards: {{ len .Values.clickhouse.cluster.shards }}
+{{- end }}
