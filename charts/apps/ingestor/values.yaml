@@ -15,7 +15,7 @@ fullnameOverride: ""
 
 # ---- Kafka ----
 kafka:
-  brokers: "kafka.kafka.svc.cluster.local:9092"
+  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
   groupId: "ingestor"
   topicPrefix: "tinode"
   tls:
