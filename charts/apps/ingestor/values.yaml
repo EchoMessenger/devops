@@ -23,7 +23,7 @@ kafka:
   sasl:
     enable: true
     mechanism: "SCRAM-SHA-512"
-    username: "ingestor"
+    username: "user"
     # Пароль берётся из Secret ingestor-kafka-user.password
     # созданного через ExternalSecret (см. templates/external-secret.yaml)
 
