@@ -20,8 +20,8 @@ data:
         <postgresql_port>{{ .Values.clickhouse.config.postgresql_port }}</postgresql_port>
         <interserver_http_port>{{ .Values.clickhouse.config.interserver_http_port }}</interserver_http_port>
 
+        <!-- Слушать на всех интерфейсах (IPv4 + IPv6) -->
         <listen_host>::</listen_host>
-        <listen_host>0.0.0.0</listen_host>
 
         <max_connections>{{ printf "%.0f" .Values.clickhouse.config.max_connections }}</max_connections>
         <keep_alive_timeout>{{ printf "%.0f" .Values.clickhouse.config.keep_alive_timeout }}</keep_alive_timeout>
