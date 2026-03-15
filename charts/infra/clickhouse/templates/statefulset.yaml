@@ -15,6 +15,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/initdb: {{ include (print $.Template.BasePath "/configmap-initdb.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -53,23 +54,26 @@ spec:
               protocol: TCP
           
           env:
-            - name: CLICKHOUSE_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "clickhouse.credentialsSecretName" . }}
-                  key: CLICKHOUSE_USER
+            # Admin password
             - name: CLICKHOUSE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "clickhouse.credentialsSecretName" . }}
+                  name: {{ include "clickhouse.fullname" . }}-credentials-admin
                   key: CLICKHOUSE_PASSWORD
-            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
-              value: "1"
-            - name: CLICKHOUSE_DB
+            # User passwords для users.xml
+            {{- range .Values.clickhouse.users }}
+            - name: CLICKHOUSE_USER_{{ .name | upper }}_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "clickhouse.credentialsSecretName" . }}
-                  key: CLICKHOUSE_DB
+                  name: {{ include "clickhouse.fullname" $ }}-credentials-{{ .name }}
+                  key: CLICKHOUSE_PASSWORD
+            {{- end }}
+            - name: CLICKHOUSE_DB
+              value: {{ .Values.clickhouse.defaultDatabase | quote }}
+            - name: CLICKHOUSE_USER
+              value: {{ .Values.clickhouse.defaultUser | quote }}
+            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+              value: "1"
           
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
@@ -102,8 +106,15 @@ spec:
             - name: config
               mountPath: /etc/clickhouse-server/config.d/custom-config.xml
               subPath: config.xml
+            - name: config
+              mountPath: /etc/clickhouse-server/users.d/custom-users.xml
+              subPath: users.xml
             - name: data
               mountPath: /var/lib/clickhouse
+            {{- if .Values.clickhouse.initScripts.enabled }}
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+            {{- end }}
             {{- if .Values.persistence.logs.enabled }}
             - name: logs
               mountPath: /var/log/clickhouse-server
@@ -113,6 +124,11 @@ spec:
         - name: config
           configMap:
             name: {{ include "clickhouse.fullname" . }}-config
+        {{- if .Values.clickhouse.initScripts.enabled }}
+        - name: initdb
+          configMap:
+            name: {{ include "clickhouse.fullname" . }}-initdb
+        {{- end }}
         {{- if not .Values.persistence.enabled }}
         - name: data
           emptyDir: {}

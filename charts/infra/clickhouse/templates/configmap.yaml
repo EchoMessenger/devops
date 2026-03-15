@@ -57,3 +57,61 @@ data:
             <max_parts_in_total>{{ .Values.clickhouse.mergeTree.max_parts_in_total }}</max_parts_in_total>
         </merge_tree>
     </clickhouse>
+
+  users.xml: |
+    <?xml version="1.0"?>
+    <clickhouse>
+        <profiles>
+            {{- range $name, $settings := .Values.clickhouse.profiles }}
+            <{{ $name }}>
+                {{- range $key, $value := $settings }}
+                <{{ $key }}>{{ $value }}</{{ $key }}>
+                {{- end }}
+            </{{ $name }}>
+            {{- end }}
+        </profiles>
+
+        <users>
+            <!-- Admin пользователь - полный доступ -->
+            <{{ .Values.clickhouse.defaultUser }}>
+                <password from_env="CLICKHOUSE_PASSWORD"/>
+                <networks>
+                    <ip>::/0</ip>
+                </networks>
+                <profile>default</profile>
+                <quota>default</quota>
+                <access_management>1</access_management>
+            </{{ .Values.clickhouse.defaultUser }}>
+            
+            {{- range .Values.clickhouse.users }}
+            <!-- {{ .name }} пользователь -->
+            <{{ .name }}>
+                <password from_env="CLICKHOUSE_USER_{{ .name | upper }}_PASSWORD"/>
+                <networks>
+                    <ip>::/0</ip>
+                </networks>
+                <profile>{{ .profile | default "default" }}</profile>
+                <quota>{{ .quota | default "default" }}</quota>
+                {{- if .databases }}
+                <allow_databases>
+                    {{- range .databases }}
+                    <database>{{ . }}</database>
+                    {{- end }}
+                </allow_databases>
+                {{- end }}
+            </{{ .name }}>
+            {{- end }}
+        </users>
+
+        <quotas>
+            {{- range $name, $settings := .Values.clickhouse.quotas }}
+            <{{ $name }}>
+                <interval>
+                    {{- range $key, $value := $settings.interval }}
+                    <{{ $key }}>{{ $value }}</{{ $key }}>
+                    {{- end }}
+                </interval>
+            </{{ $name }}>
+            {{- end }}
+        </quotas>
+    </clickhouse>

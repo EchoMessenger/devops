@@ -8,28 +8,31 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-# Количество реплик (для single-node = 1)
 replicaCount: 1
 
 # Настройки ClickHouse
 clickhouse:
-  # Дефолтная база данных
-  defaultDatabase: "default"
+  # База данных для аудита
+  defaultDatabase: "audit"
   
-  # Пользователь по умолчанию (admin)
-  defaultUser: "default"
-  
-  # Пароль генерируется автоматически если не указан
-  defaultPassword: ""
+  # Админ пользователь
+  defaultUser: "admin"
+  defaultPassword: ""  # Генерируется автоматически
   
   # Дополнительные пользователи
-  users: []
-  # - name: analytics
-  #   password: ""  # будет сгенерирован
-  #   databases:
-  #     - analytics_db
-  #   profile: default
-  #   quota: default
+  users:
+    - name: ingestor
+      password: ""  # Генерируется автоматически
+      profile: ingestor
+      quota: default
+      databases:
+        - audit
+    - name: audit
+      password: ""  # Генерируется автоматически
+      profile: readonly
+      quota: default
+      databases:
+        - audit
   
   # Профили пользователей
   profiles:
@@ -37,8 +40,17 @@ clickhouse:
       max_memory_usage: 10000000000
       use_uncompressed_cache: 0
       load_balancing: random
+    
     readonly:
       readonly: 1
+      max_memory_usage: 5000000000
+      max_execution_time: 60
+    
+    ingestor:
+      readonly: 0
+      max_memory_usage: 2000000000
+      max_execution_time: 30
+      max_insert_block_size: 1048576
   
   # Квоты
   quotas:
@@ -53,7 +65,6 @@ clickhouse:
 
   # Настройки сервера
   config:
-    # Логирование
     logger:
       level: information
       log: /var/log/clickhouse-server/clickhouse-server.log
@@ -61,78 +72,39 @@ clickhouse:
       size: 1000M
       count: 10
     
-    # HTTP интерфейс
     http_port: 8123
-    
-    # Native протокол
     tcp_port: 9000
-    
-    # MySQL протокол (опционально)
     mysql_port: 9004
-    
-    # PostgreSQL протокол (опционально)
     postgresql_port: 9005
-    
-    # Interserver HTTP (для репликации)
     interserver_http_port: 9009
     
-    # Максимальное количество соединений
     max_connections: 4096
-    
-    # Keep-alive таймаут
     keep_alive_timeout: 3
-    
-    # Максимальное количество одновременных запросов
     max_concurrent_queries: 100
     
-    # Размер кеша несжатых данных
     uncompressed_cache_size: 8589934592
-    
-    # Размер кеша меток
     mark_cache_size: 5368709120
     
-    # Путь к данным
     path: /var/lib/clickhouse/
-    
-    # Путь к временным данным
     tmp_path: /var/lib/clickhouse/tmp/
-    
-    # Путь к файлам пользователей
     user_files_path: /var/lib/clickhouse/user_files/
-    
-    # Путь к форматным схемам
     format_schema_path: /var/lib/clickhouse/format_schemas/
 
-  # Настройки ZooKeeper (для репликации)
   zookeeper:
     enabled: false
-    nodes: []
-    # - host: zookeeper-0.zookeeper
-    #   port: 2181
-    # - host: zookeeper-1.zookeeper
-    #   port: 2181
-    # - host: zookeeper-2.zookeeper
-    #   port: 2181
-    session_timeout_ms: 30000
-    operation_timeout_ms: 10000
 
-  # Настройки кластера (для distributed queries)
   cluster:
     enabled: false
-    name: "default_cluster"
-    shards: []
-    # - replicas:
-    #     - host: clickhouse-0
-    #       port: 9000
-    #     - host: clickhouse-1
-    #       port: 9000
 
-  # Дополнительные настройки MergeTree
   mergeTree:
     replicated_deduplication_window: 100
     replicated_deduplication_window_seconds: 604800
     max_suspicious_broken_parts: 10
     max_parts_in_total: 100000
+
+  # Инициализационные SQL скрипты
+  initScripts:
+    enabled: true
 
 # Ресурсы
 resources:
@@ -140,8 +112,8 @@ resources:
     cpu: 4
     memory: 8Gi
   requests:
-    cpu: 1
-    memory: 2Gi
+    cpu: 500m
+    memory: 1Gi
 
 # Persistent Volume
 persistence:
@@ -149,10 +121,7 @@ persistence:
   storageClass: ""
   accessMode: ReadWriteOnce
   size: 100Gi
-  # Аннотации для PVC
   annotations: {}
-  
-  # Отдельный volume для логов
   logs:
     enabled: false
     size: 10Gi
@@ -162,39 +131,24 @@ persistence:
 service:
   type: ClusterIP
   annotations: {}
-  # HTTP порт
   httpPort: 8123
-  # Native TCP порт
   tcpPort: 9000
-  # MySQL порт
   mysqlPort: 9004
-  # PostgreSQL порт
   postgresqlPort: 9005
-  # Interserver порт
   interserverPort: 9009
 
-# Node selector
 nodeSelector: {}
-
-# Tolerations
 tolerations: []
-
-# Affinity
 affinity: {}
-
-# Pod annotations
 podAnnotations: {}
 
-# Pod security context
 podSecurityContext:
   fsGroup: 101
 
-# Security context
 securityContext:
   runAsUser: 101
   runAsGroup: 101
 
-# Liveness probe
 livenessProbe:
   enabled: true
   initialDelaySeconds: 30
@@ -203,7 +157,6 @@ livenessProbe:
   failureThreshold: 3
   successThreshold: 1
 
-# Readiness probe
 readinessProbe:
   enabled: true
   initialDelaySeconds: 10
@@ -213,40 +166,20 @@ readinessProbe:
   successThreshold: 1
 
 # ========================================
-# External Secrets / PushSecret настройки
+# PushSecret настройки
 # ========================================
 pushSecret:
   enabled: true
-  
-  # Имя ClusterSecretStore для OpenBao
   secretStoreName: "openbao-global"
-  
-  # Путь в OpenBao где хранить секреты
-  remotePath: "/clickhouse/credentials"
-  
-  # Использовать properties для разделения ключей
+  refreshInterval: "1h"
+  deletionPolicy: "None"
   useProperty: true
   
-  # Интервал обновления
-  refreshInterval: "1h"
-  
-  # Политика удаления: None, Delete
-  deletionPolicy: "None"
-  
-  # Дополнительные секреты для push
-  additionalSecrets: []
-  # - secretKey: CUSTOM_SECRET
-  #   property: customSecret
+  # Пути для каждого пользователя
+  paths:
+    admin: "secret/data/clickhouse/admin"
+    ingestor: "secret/data/clickhouse/ingestor"
+    audit: "secret/data/clickhouse/audit"
 
-# External Secret Взаимоисключает Secret
 externalSecret:
   enabled: false
-  
-  # Имя ClusterSecretStore
-  secretStoreName: "openbao-global"
-  
-  # Путь в OpenBao
-  remotePath: "clickhouse/credentials"
-  
-  # Интервал обновления
-  refreshInterval: "1h"
