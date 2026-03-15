@@ -238,9 +238,9 @@ pushSecret:
   # - secretKey: CUSTOM_SECRET
   #   property: customSecret
 
-# External Secret (для pull секретов из OpenBao)
+# External Secret Взаимоисключает Secret
 externalSecret:
-  enabled: true
+  enabled: false
   
   # Имя ClusterSecretStore
   secretStoreName: "openbao-global"

@@ -66,3 +66,10 @@ data:
     path "secret/metadata/platform/keycloak" {
       capabilities = ["read"]
     }
+
+    path "secret/data/clickhouse/*" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/clickhouse/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
