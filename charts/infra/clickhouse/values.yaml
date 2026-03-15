@@ -177,9 +177,9 @@ pushSecret:
   
   # Пути для каждого пользователя
   paths:
-    admin: "secret/data/clickhouse/admin"
-    ingestor: "secret/data/clickhouse/ingestor"
-    audit: "secret/data/clickhouse/audit"
+    admin: "clickhouse/admin"
+    ingestor: "clickhouse/ingestor"
+    audit: "clickhouse/audit"
 
 externalSecret:
   enabled: false
