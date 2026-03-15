@@ -216,7 +216,7 @@ readinessProbe:
 # External Secrets / PushSecret настройки
 # ========================================
 pushSecret:
-  enabled: false
+  enabled: true
   
   # Имя ClusterSecretStore для OpenBao
   secretStoreName: "openbao-global"
@@ -240,7 +240,7 @@ pushSecret:
 
 # External Secret (для pull секретов из OpenBao)
 externalSecret:
-  enabled: false
+  enabled: true
   
   # Имя ClusterSecretStore
   secretStoreName: "openbao-global"
