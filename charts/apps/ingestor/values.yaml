@@ -2,9 +2,11 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/echomessenger/ingestor
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
+  # Переопределяется в CI через --set image.tag=$VERSION
   tag: "latest"
 
+# Секрет для пулла образа из ghcr — создаётся через ExternalSecret
 imagePullSecrets:
   - name: ghcr-secret
 
@@ -21,18 +23,19 @@ kafka:
   sasl:
     enable: true
     mechanism: "SCRAM-SHA-512"
-    username: "user"
+    username: "ingestor"
     # Пароль берётся из Secret ingestor-kafka-user.password
     # созданного через ExternalSecret (см. templates/external-secret.yaml)
 
 # ---- ClickHouse ----
 clickhouse:
-  # nativeUrl из secret/clickhouse/credentials разбивается на компоненты
-  # чтобы не хранить URL целиком в values и иметь возможность менять отдельно
   addr: "clickhouse.clickhouse.svc.cluster.local:9000"
   db: "audit"
-  # username и password берутся из Secret ingestor-clickhouse.
-  # Значения в OpenBao: secret/clickhouse/credentials → username, password
+  # Путь к секрету в OpenBao откуда берутся username и password.
+  # Формат: secret/<path> — без /data/ (ESO добавляет сам для KV v2).
+  openbaoPath: "clickhouse/ingestor"
+  # username и password берутся из Secret ingestor-clickhouse
+  # созданного через ExternalSecret из openbaoPath выше.
 
 # ---- Batching ----
 batch:
