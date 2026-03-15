@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/echomessenger/ingestor
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Переопределяется в CI через --set image.tag=$VERSION
   tag: "latest"
 
