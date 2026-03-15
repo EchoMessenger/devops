@@ -23,12 +23,12 @@ data:
         <listen_host>::</listen_host>
         <listen_host>0.0.0.0</listen_host>
 
-        <max_connections>{{ .Values.clickhouse.config.max_connections }}</max_connections>
-        <keep_alive_timeout>{{ .Values.clickhouse.config.keep_alive_timeout }}</keep_alive_timeout>
-        <max_concurrent_queries>{{ .Values.clickhouse.config.max_concurrent_queries }}</max_concurrent_queries>
+        <max_connections>{{ int .Values.clickhouse.config.max_connections }}</max_connections>
+        <keep_alive_timeout>{{ int .Values.clickhouse.config.keep_alive_timeout }}</keep_alive_timeout>
+        <max_concurrent_queries>{{ int .Values.clickhouse.config.max_concurrent_queries }}</max_concurrent_queries>
 
-        <uncompressed_cache_size>{{ .Values.clickhouse.config.uncompressed_cache_size }}</uncompressed_cache_size>
-        <mark_cache_size>{{ .Values.clickhouse.config.mark_cache_size }}</mark_cache_size>
+        <uncompressed_cache_size>{{ int64 .Values.clickhouse.config.uncompressed_cache_size }}</uncompressed_cache_size>
+        <mark_cache_size>{{ int64 .Values.clickhouse.config.mark_cache_size }}</mark_cache_size>
 
         <path>{{ .Values.clickhouse.config.path }}</path>
         <tmp_path>{{ .Values.clickhouse.config.tmp_path }}</tmp_path>
@@ -45,16 +45,16 @@ data:
                 <port>{{ .port }}</port>
             </node>
             {{- end }}
-            <session_timeout_ms>{{ .Values.clickhouse.zookeeper.session_timeout_ms }}</session_timeout_ms>
-            <operation_timeout_ms>{{ .Values.clickhouse.zookeeper.operation_timeout_ms }}</operation_timeout_ms>
+            <session_timeout_ms>{{ int .Values.clickhouse.zookeeper.session_timeout_ms }}</session_timeout_ms>
+            <operation_timeout_ms>{{ int .Values.clickhouse.zookeeper.operation_timeout_ms }}</operation_timeout_ms>
         </zookeeper>
         {{- end }}
 
         <merge_tree>
-            <replicated_deduplication_window>{{ .Values.clickhouse.mergeTree.replicated_deduplication_window }}</replicated_deduplication_window>
-            <replicated_deduplication_window_seconds>{{ .Values.clickhouse.mergeTree.replicated_deduplication_window_seconds }}</replicated_deduplication_window_seconds>
-            <max_suspicious_broken_parts>{{ .Values.clickhouse.mergeTree.max_suspicious_broken_parts }}</max_suspicious_broken_parts>
-            <max_parts_in_total>{{ .Values.clickhouse.mergeTree.max_parts_in_total }}</max_parts_in_total>
+            <replicated_deduplication_window>{{ int .Values.clickhouse.mergeTree.replicated_deduplication_window }}</replicated_deduplication_window>
+            <replicated_deduplication_window_seconds>{{ int .Values.clickhouse.mergeTree.replicated_deduplication_window_seconds }}</replicated_deduplication_window_seconds>
+            <max_suspicious_broken_parts>{{ int .Values.clickhouse.mergeTree.max_suspicious_broken_parts }}</max_suspicious_broken_parts>
+            <max_parts_in_total>{{ int .Values.clickhouse.mergeTree.max_parts_in_total }}</max_parts_in_total>
         </merge_tree>
     </clickhouse>
 
@@ -72,7 +72,6 @@ data:
         </profiles>
 
         <users>
-            <!-- Admin пользователь - полный доступ -->
             <{{ .Values.clickhouse.defaultUser }}>
                 <password from_env="CLICKHOUSE_PASSWORD"/>
                 <networks>
@@ -84,7 +83,6 @@ data:
             </{{ .Values.clickhouse.defaultUser }}>
             
             {{- range .Values.clickhouse.users }}
-            <!-- {{ .name }} пользователь -->
             <{{ .name }}>
                 <password from_env="CLICKHOUSE_USER_{{ .name | upper }}_PASSWORD"/>
                 <networks>
