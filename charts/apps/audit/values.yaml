@@ -83,6 +83,7 @@ env:
   EXPORT_PVC_PATH: "/exports"
   LOG_LEVEL: "debug"
   CLICKHOUSE_POOL_SIZE: "10"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.echo-messenger.ru/realms/echo"
 
 # ExternalSecret ссылки (имена секретов в Vault/OpenBao)
 externalSecrets:
