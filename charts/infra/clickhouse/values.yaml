@@ -21,13 +21,13 @@ clickhouse:
   
   # Дополнительные пользователи
   users:
-    ingestor:
+    - name: ingestor
       password: ""  # Генерируется автоматически
       profile: ingestor
       quota: default
       databases:
         - audit
-    audit:
+    - name: audit
       password: ""  # Генерируется автоматически
       profile: readonly
       quota: default

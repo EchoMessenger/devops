@@ -60,7 +60,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "clickhouse.fullname" . }}-credentials-admin
                   key: CLICKHOUSE_PASSWORD
-            # User passwords для users.xml
             {{- range .Values.clickhouse.users }}
             - name: CLICKHOUSE_USER_{{ .name | upper }}_PASSWORD
               valueFrom:

@@ -49,70 +49,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Generate random password
-*/}}
-{{- define "clickhouse.generatePassword" -}}
-{{- randAlphaNum 24 }}
-{{- end }}
-
-{{/*
-Get or generate default password
-*/}}
-{{- define "clickhouse.defaultPassword" -}}
-{{- if .Values.clickhouse.defaultPassword }}
-{{- .Values.clickhouse.defaultPassword }}
-{{- else }}
-{{- include "clickhouse.generatePassword" . }}
-{{- end }}
-{{- end }}
-
-{{/*
-Credentials secret name
-*/}}
-{{- define "clickhouse.credentialsSecretName" -}}
-{{- if .Values.externalSecret.enabled }}
-{{- include "clickhouse.fullname" . }}-external-credentials
-{{- else }}
-{{- include "clickhouse.fullname" . }}-credentials
-{{- end }}
-{{- end }}
-
-{{/*
-Generate SHA256 password hash for ClickHouse
-*/}}
-{{- define "clickhouse.passwordSHA256" -}}
-{{- . | sha256sum }}
-{{- end }}
-
-{{/*
-Generate connection URL
-*/}}
-{{- define "clickhouse.connectionUrl" -}}
-{{- $fullname := include "clickhouse.fullname" . -}}
-{{- $user := .Values.clickhouse.defaultUser -}}
-{{- $password := include "clickhouse.defaultPassword" . -}}
-{{- $port := .Values.service.httpPort -}}
-{{- $database := .Values.clickhouse.defaultDatabase -}}
-clickhouse://{{ $user }}:{{ $password }}@{{ $fullname }}:{{ $port }}/{{ $database }}
-{{- end }}
-
-{{/*
-Generate native protocol connection URL
-*/}}
-{{- define "clickhouse.nativeUrl" -}}
-{{- $fullname := include "clickhouse.fullname" . -}}
-{{- $user := .Values.clickhouse.defaultUser -}}
-{{- $password := include "clickhouse.defaultPassword" . -}}
-{{- $port := .Values.service.tcpPort -}}
-{{- $database := .Values.clickhouse.defaultDatabase -}}
-clickhouse://{{ $user }}:{{ $password }}@{{ $fullname }}:{{ $port }}/{{ $database }}?secure=false
-{{- end }}
-
-{{/*
-Формирование ClickHouse HTTP URL для внутрикластерного DNS
+ClickHouse HTTP URL для внутрикластерного DNS
+Использует fullname и service.httpPort из values
 */}}
 {{- define "clickhouse.httpUrl" -}}
-http://{{ .Values.clickhouse.service.name }}.{{ .Values.clickhouse.service.namespace }}.svc.cluster.local:{{ .Values.clickhouse.service.httpPort }}
+http://{{ include "clickhouse.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}
 {{- end -}}
 
 {{/*

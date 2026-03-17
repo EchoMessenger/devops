@@ -1,5 +1,5 @@
 {{- if .Values.clickhouse.initScripts.enabled }}
-apiVersion: v1
+aapiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "clickhouse.fullname" . }}-initdb
@@ -8,16 +8,15 @@ metadata:
     {{- include "clickhouse.labels" . | nindent 4 }}
 data:
   00-create-users.sql: |
-    -- Пользователь для ingestor (только INSERT)
-    CREATE USER IF NOT EXISTS ingestor
-    IDENTIFIED WITH sha256_password BY '{{ .Values.clickhouse.users.ingestor.password }}'
-    DEFAULT DATABASE {{ .Values.clickhouse.defaultDatabase }};
-    
-    -- Пользователь для audit-service (только SELECT)
-    CREATE USER IF NOT EXISTS audit
-    IDENTIFIED WITH sha256_password BY '{{ .Values.clickhouse.users.audit.password }}'
-    DEFAULT DATABASE {{ .Values.clickhouse.defaultDatabase }};
-    
+    -- ============================================
+    -- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЕЙ
+    -- ============================================
+    {{- range .Values.clickhouse.users }}
+    CREATE USER IF NOT EXISTS {{ .name }}
+    IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_USER_{{ .name | upper }}_PASSWORD}'
+    DEFAULT DATABASE {{ $.Values.clickhouse.defaultDatabase }};
+    {{- end }}
+
   01-create-database.sql: |
     CREATE DATABASE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }};
 
@@ -165,7 +164,6 @@ data:
     -- ТАБЛИЦЫ-ХРАНИЛИЩА для Materialized Views
     -- ============================================
     
-    -- Хранилище для статистики по типам сообщений (по дням)
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store (
         day      Date,
         msg_type String,
@@ -175,7 +173,6 @@ data:
     ORDER BY (day, msg_type)
     TTL toDateTime(day) + INTERVAL 365 DAY;
 
-    -- Хранилище для активности пользователей (по дням)
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store (
         day         Date,
         usr_id      String,
@@ -185,7 +182,6 @@ data:
     ORDER BY (day, usr_id)
     TTL toDateTime(day) + INTERVAL 365 DAY;
 
-    -- Хранилище для почасовой нагрузки
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store (
         hour_ts     DateTime,
         msg_type    String,
@@ -197,10 +193,9 @@ data:
 
   04-create-materialized-views.sql: |
     -- ============================================
-    -- MATERIALIZED VIEWS (автоматическая агрегация)
+    -- MATERIALIZED VIEWS
     -- ============================================
     
-    -- MV: статистика по типам сообщений (daily)
     CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_writer
     TO {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store
     AS SELECT
@@ -210,7 +205,6 @@ data:
     FROM {{ .Values.clickhouse.defaultDatabase }}.client_req_log
     GROUP BY day, msg_type;
 
-    -- MV: активность пользователей (daily)
     CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_writer
     TO {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store
     AS SELECT
@@ -221,7 +215,6 @@ data:
     WHERE sess_user_id != ''
     GROUP BY day, usr_id;
 
-    -- MV: почасовая нагрузка
     CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_writer
     TO {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store
     AS SELECT
@@ -233,22 +226,19 @@ data:
 
   05-create-view-aliases.sql: |
     -- ============================================
-    -- VIEW-АЛИАСЫ для удобного чтения (для audit-service)
+    -- VIEW-АЛИАСЫ для чтения
     -- ============================================
     
-    -- Алиас для чтения статистики по типам сообщений
     CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats AS
     SELECT day, msg_type, sum(cnt) AS cnt
     FROM {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store
     GROUP BY day, msg_type;
 
-    -- Алиас для чтения активности пользователей
     CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity AS
     SELECT day, usr_id, sum(event_count) AS event_count
     FROM {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store
     GROUP BY day, usr_id;
 
-    -- Алиас для чтения почасовой нагрузки
     CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats AS
     SELECT hour_ts, msg_type, sum(event_count) AS event_count
     FROM {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store
@@ -258,17 +248,16 @@ data:
     -- ============================================
     -- ПРАВА ДОСТУПА
     -- ============================================
-    
-    -- Права для ingestor: только INSERT в основные таблицы
-    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.account_log TO ingestor;
-    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.topic_log TO ingestor;
-    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.subscription_log TO ingestor;
-    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.message_log TO ingestor;
-    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.search_log TO ingestor;
-    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.client_req_log TO ingestor;
-    
-    -- Права для audit: SELECT из всех таблиц и VIEW
-    GRANT SELECT ON {{ .Values.clickhouse.defaultDatabase }}.* TO audit;
-    
-    -- Admin уже имеет все права через access_management=1
+    {{- range .Values.clickhouse.users }}
+    {{- if eq .name "ingestor" }}
+    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.account_log TO {{ .name }};
+    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.topic_log TO {{ .name }};
+    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.subscription_log TO {{ .name }};
+    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.message_log TO {{ .name }};
+    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.search_log TO {{ .name }};
+    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.client_req_log TO {{ .name }};
+    {{- else if eq .name "audit" }}
+    GRANT SELECT ON {{ $.Values.clickhouse.defaultDatabase }}.* TO {{ .name }};
+    {{- end }}
+    {{- end }}
 {{- end }}

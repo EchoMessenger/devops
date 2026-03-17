@@ -1,75 +1,77 @@
-{{- $fullname := include "clickhouse.fullname" . -}}
+=======================================================
+  ClickHouse has been installed!
+=======================================================
 
-ClickHouse has been deployed!
+Namespace: {{ .Release.Namespace }}
+Release:   {{ .Release.Name }}
 
-Connection Details:
-======================
+=======================================================
+  CONNECTION INFO
+=======================================================
 
-HTTP Interface:
-  URL: http://{{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}
+HTTP URL (internal):
+  {{ include "clickhouse.httpUrl" . }}
 
-Native Protocol:
-  Host: {{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local
-  Port: {{ .Values.service.tcpPort }}
+JDBC URL:
+  {{ include "clickhouse.jdbcUrl" . }}
 
-MySQL Protocol:
-  Host: {{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local
-  Port: {{ .Values.service.mysqlPort }}
+TCP URL:
+  {{ include "clickhouse.tcpUrl" . }}
 
-PostgreSQL Protocol:
-  Host: {{ $fullname }}.{{ .Release.Namespace }}.svc.cluster.local
-  Port: {{ .Values.service.postgresqlPort }}
+=======================================================
+  CREDENTIALS
+=======================================================
 
-Credentials:
-===============
+Admin credentials secret:
+  {{ include "clickhouse.fullname" . }}-credentials-admin
 
-{{- if .Values.externalSecret.enabled }}
-Credentials are managed by ExternalSecret from OpenBao.
-Secret name: {{ $fullname }}-external-credentials
-{{- else }}
-Default user: {{ .Values.clickhouse.defaultUser }}
+To get admin password:
+  kubectl get secret {{ include "clickhouse.fullname" . }}-credentials-admin \
+    -n {{ .Release.Namespace }} \
+    -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d
 
-To get the password:
-  kubectl get secret {{ $fullname }}-credentials -n {{ .Release.Namespace }} -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d
+User credentials:
+{{- range .Values.clickhouse.users }}
+  - {{ include "clickhouse.fullname" $ }}-credentials-{{ .name }}
 {{- end }}
+
+=======================================================
+  PORT FORWARDING
+=======================================================
+
+HTTP (for queries):
+  kubectl port-forward svc/{{ include "clickhouse.fullname" . }} {{ .Values.service.httpPort }}:{{ .Values.service.httpPort }} -n {{ .Release.Namespace }}
+
+Native TCP:
+  kubectl port-forward svc/{{ include "clickhouse.fullname" . }} {{ .Values.service.tcpPort }}:{{ .Values.service.tcpPort }} -n {{ .Release.Namespace }}
+
+=======================================================
+  VERIFY INSTALLATION
+=======================================================
+
+Check pod status:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "clickhouse.name" . }}
+
+Check logs:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "clickhouse.name" . }}
+
+Test connection:
+  kubectl exec -it {{ include "clickhouse.fullname" . }}-0 -n {{ .Release.Namespace }} -- \
+    clickhouse-client --user {{ .Values.clickhouse.defaultUser }} --password $(kubectl get secret {{ include "clickhouse.fullname" . }}-credentials-admin -n {{ .Release.Namespace }} -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d) \
+    -q "SELECT version()"
 
 {{- if .Values.pushSecret.enabled }}
 
-PushSecret Status:
-=====================
-Secrets are being pushed to OpenBao at: {{ .Values.pushSecret.remotePath }}
-Check status: kubectl get pushsecret {{ $fullname }}-pushsecret -n {{ .Release.Namespace }}
-{{- end }}
+=======================================================
+  PUSH SECRET
+=======================================================
 
-Quick Test:
-==============
-
-# Port-forward HTTP interface
-kubectl port-forward svc/{{ $fullname }} 8123:{{ .Values.service.httpPort }} -n {{ .Release.Namespace }}
-
-# Test connection
-curl "http://localhost:8123/ping"
-
-# Query via HTTP
-curl "http://localhost:8123/?query=SELECT%201"
-
-# With authentication
-export CLICKHOUSE_PASSWORD=$(kubectl get secret {{ include "clickhouse.credentialsSecretName" . }} -n {{ .Release.Namespace }} -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d)
-curl "http://{{ .Values.clickhouse.defaultUser }}:${CLICKHOUSE_PASSWORD}@localhost:8123/?query=SHOW%20DATABASES"
-
-{{- if .Values.clickhouse.users }}
-
-Additional Users:
-====================
+Secrets are being pushed to external secret store:
+  - {{ .Values.pushSecret.paths.admin }}
 {{- range .Values.clickhouse.users }}
-  - {{ .name }}
-{{- end }}
+  - {{ index $.Values.pushSecret.paths .name }}
 {{- end }}
 
-{{- if .Values.clickhouse.cluster.enabled }}
-
-Cluster Configuration:
-=========================
-Cluster name: {{ .Values.clickhouse.cluster.name }}
-Number of shards: {{ len .Values.clickhouse.cluster.shards }}
+Check PushSecret status:
+  kubectl get pushsecret -n {{ .Release.Namespace }}
 {{- end }}
