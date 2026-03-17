@@ -172,7 +172,7 @@ pushSecret:
   enabled: true
   secretStoreName: "openbao-global"
   refreshInterval: "1h"
-  deletionPolicy: "None"
+  deletionPolicy: "Delete"
   useProperty: true
   
   # Пути для каждого пользователя

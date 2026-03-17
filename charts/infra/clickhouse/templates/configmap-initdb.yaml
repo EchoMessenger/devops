@@ -7,6 +7,17 @@ metadata:
   labels:
     {{- include "clickhouse.labels" . | nindent 4 }}
 data:
+  00-create-users.sql: |
+    -- Пользователь для ingestor (только INSERT)
+    CREATE USER IF NOT EXISTS ingestor
+    IDENTIFIED WITH sha256_password BY '{{ .Values.clickhouse.users.ingestor.password }}'
+    DEFAULT DATABASE {{ .Values.clickhouse.defaultDatabase }};
+    
+    -- Пользователь для audit-service (только SELECT)
+    CREATE USER IF NOT EXISTS audit
+    IDENTIFIED WITH sha256_password BY '{{ .Values.clickhouse.users.audit.password }}'
+    DEFAULT DATABASE {{ .Values.clickhouse.defaultDatabase }};
+    
   01-create-database.sql: |
     CREATE DATABASE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }};
 

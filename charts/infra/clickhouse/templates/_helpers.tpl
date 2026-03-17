@@ -107,3 +107,24 @@ Generate native protocol connection URL
 {{- $database := .Values.clickhouse.defaultDatabase -}}
 clickhouse://{{ $user }}:{{ $password }}@{{ $fullname }}:{{ $port }}/{{ $database }}?secure=false
 {{- end }}
+
+{{/*
+Формирование ClickHouse HTTP URL для внутрикластерного DNS
+*/}}
+{{- define "clickhouse.httpUrl" -}}
+http://{{ .Values.clickhouse.service.name }}.{{ .Values.clickhouse.service.namespace }}.svc.cluster.local:{{ .Values.clickhouse.service.httpPort }}
+{{- end -}}
+
+{{/*
+ClickHouse TCP URL
+*/}}
+{{- define "clickhouse.tcpUrl" -}}
+{{ include "clickhouse.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.tcpPort }}
+{{- end -}}
+
+{{/*
+ClickHouse JDBC URL
+*/}}
+{{- define "clickhouse.jdbcUrl" -}}
+jdbc:clickhouse://{{ include "clickhouse.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/{{ .Values.clickhouse.defaultDatabase }}
+{{- end -}}
