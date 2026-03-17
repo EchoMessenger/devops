@@ -84,17 +84,21 @@ spec:
                   name: {{ include "audit-service.fullname" . }}-config
                   key: EXPORT_PVC_PATH
 
-            # Credentials из ExternalSecret (Vault → k8s Secret)
-            - name: CLICKHOUSE_URL
+            - name: CLICKHOUSE_NATIVE_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "audit-service.fullname" . }}-clickhouse
-                  key: url
-            - name: CLICKHOUSE_USER
+                  key: native-url
+            - name: CLICKHOUSE_HTTP_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "audit-service.fullname" . }}-clickhouse
-                  key: user
+                  key: http-url
+            - name: CLICKHOUSE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-clickhouse
+                  key: username
             - name: CLICKHOUSE_PASSWORD
               valueFrom:
                 secretKeyRef:
