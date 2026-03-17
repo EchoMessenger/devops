@@ -97,7 +97,7 @@ externalSecrets:
       # Ожидаемые поля в Vault: url, user, password
   keycloak:
     remoteRef:
-      key: keycloak/audit
+      key: platform/keycloak
       # Ожидаемые поля в Vault: issuer-uri
 
 livenessProbe:
