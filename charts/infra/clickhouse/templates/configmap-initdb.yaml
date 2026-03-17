@@ -1,4 +1,3 @@
-{{- if .Values.clickhouse.initScripts.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,21 +6,10 @@ metadata:
   labels:
     {{- include "clickhouse.labels" . | nindent 4 }}
 data:
-  00-create-users.sql: |
-    -- ============================================
-    -- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЕЙ
-    -- ============================================
-    {{- range .Values.clickhouse.users }}
-    CREATE USER IF NOT EXISTS {{ .name }}
-    IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_USER_{{ .name | upper }}_PASSWORD}'
-    DEFAULT DATABASE {{ $.Values.clickhouse.defaultDatabase }};
-    {{- end }}
-
-  01-create-database.sql: |
+  00-create-database.sql: |
     CREATE DATABASE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }};
 
-  02-create-tables.sql: |
-    -- account_log
+  01-table-account-log.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.account_log (
         log_id        UUID          DEFAULT generateUUIDv4(),
         log_timestamp DateTime64(3) DEFAULT now64(3),
@@ -36,7 +24,7 @@ data:
     ORDER BY (log_timestamp, user_id, action)
     TTL toDateTime(log_timestamp) + INTERVAL 365 DAY;
 
-    -- topic_log
+  02-table-topic-log.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.topic_log (
         log_id        UUID          DEFAULT generateUUIDv4(),
         log_timestamp DateTime64(3) DEFAULT now64(3),
@@ -66,7 +54,7 @@ data:
     PARTITION BY toYYYYMM(log_timestamp)
     ORDER BY (log_timestamp, topic_name, action);
 
-    -- subscription_log
+  03-table-subscription-log.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.subscription_log (
         log_id        UUID          DEFAULT generateUUIDv4(),
         log_timestamp DateTime64(3) DEFAULT now64(3),
@@ -83,12 +71,12 @@ data:
     PARTITION BY toYYYYMM(log_timestamp)
     ORDER BY (log_timestamp, topic, user_id, action);
 
-    -- message_log
+  04-table-message-log.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.message_log (
-        log_id        UUID          DEFAULT generateUUIDv4(),
-        log_timestamp DateTime64(3) DEFAULT now64(3),
-        action        Enum8('CREATE' = 0, 'UPDATE' = 1, 'DELETE' = 2),
-        msg_topic     String,
+        log_id           UUID          DEFAULT generateUUIDv4(),
+        log_timestamp    DateTime64(3) DEFAULT now64(3),
+        action           Enum8('CREATE' = 0, 'UPDATE' = 1, 'DELETE' = 2),
+        msg_topic        String,
         msg_from_user_id Nullable(String),
         msg_timestamp    Int64,
         msg_deleted_at   Nullable(Int64),
@@ -99,56 +87,56 @@ data:
     PARTITION BY toYYYYMM(log_timestamp)
     ORDER BY (log_timestamp, msg_topic, msg_seq_id);
 
-    -- client_req_log
+  05-table-client-req-log.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.client_req_log (
-        log_id        UUID          DEFAULT generateUUIDv4(),
-        log_timestamp DateTime64(3) DEFAULT now64(3),
-        sess_session_id  String,
-        sess_user_id     String,
-        sess_auth_level  String,
-        sess_remote_addr String,
-        sess_user_agent  String,
-        sess_device_id   String,
-        sess_language    String,
-        msg_type         String,
-        msg_id           String,
-        msg_topic        String,
-        extra_attachments  Array(String),
+        log_id           UUID          DEFAULT generateUUIDv4(),
+        log_timestamp    DateTime64(3) DEFAULT now64(3),
+        sess_session_id  String        DEFAULT '',
+        sess_user_id     String        DEFAULT '',
+        sess_auth_level  String        DEFAULT '',
+        sess_remote_addr String        DEFAULT '',
+        sess_user_agent  String        DEFAULT '',
+        sess_device_id   String        DEFAULT '',
+        sess_language    String        DEFAULT '',
+        msg_type         String        DEFAULT '',
+        msg_id           String        DEFAULT '',
+        msg_topic        String        DEFAULT '',
+        extra_attachments  Array(String) DEFAULT [],
         extra_on_behalf_of Nullable(String),
         extra_auth_level   Nullable(String),
-        hi_user_agent Nullable(String),
-        hi_ver        Nullable(String),
-        hi_device_id  Nullable(String),
-        hi_lang       Nullable(String),
-        hi_platform   Nullable(String),
-        hi_background Nullable(Bool),
-        acc_user_id    Nullable(String),
-        acc_scheme     Nullable(String),
-        acc_login      Nullable(Bool),
-        acc_state      Nullable(String),
-        acc_auth_level Nullable(String),
-        acc_tmp_scheme Nullable(String),
-        acc_tags       Array(String),
-        login_scheme   Nullable(String),
-        sub_topic      Nullable(String),
-        leave_unsub    Nullable(Bool),
-        pub_no_echo    Nullable(Bool),
-        pub_head       Map(String, String),
-        pub_content    Nullable(String),
-        get_what       Nullable(String),
-        set_topic      Nullable(String),
-        del_what       Nullable(String),
-        del_user_id    Nullable(String),
-        del_hard       Nullable(Bool),
-        note_what      Nullable(String),
-        note_seq_id    Nullable(Int32),
-        note_event     Nullable(String)
+        hi_user_agent    Nullable(String),
+        hi_ver           Nullable(String),
+        hi_device_id     Nullable(String),
+        hi_lang          Nullable(String),
+        hi_platform      Nullable(String),
+        hi_background    Nullable(Bool),
+        acc_user_id      Nullable(String),
+        acc_scheme       Nullable(String),
+        acc_login        Nullable(Bool),
+        acc_state        Nullable(String),
+        acc_auth_level   Nullable(String),
+        acc_tmp_scheme   Nullable(String),
+        acc_tags         Array(String) DEFAULT [],
+        login_scheme     Nullable(String),
+        sub_topic        Nullable(String),
+        leave_unsub      Nullable(Bool),
+        pub_no_echo      Nullable(Bool),
+        pub_head         Map(String, String) DEFAULT map(),
+        pub_content      Nullable(String),
+        get_what         Nullable(String),
+        set_topic        Nullable(String),
+        del_what         Nullable(String),
+        del_user_id      Nullable(String),
+        del_hard         Nullable(Bool),
+        note_what        Nullable(String),
+        note_seq_id      Nullable(Int32),
+        note_event       Nullable(String)
     ) ENGINE = MergeTree()
     PARTITION BY toYYYYMM(log_timestamp)
     ORDER BY (log_timestamp, sess_user_id, msg_type)
     TTL toDateTime(log_timestamp) + INTERVAL 90 DAY;
 
-    -- search_log
+  06-table-search-log.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.search_log (
         log_id        UUID          DEFAULT generateUUIDv4(),
         log_timestamp DateTime64(3) DEFAULT now64(3),
@@ -159,11 +147,33 @@ data:
     ORDER BY (log_timestamp, user_id)
     TTL toDateTime(log_timestamp) + INTERVAL 90 DAY;
 
-  03-create-analytics-tables.sql: |
-    -- ============================================
-    -- ТАБЛИЦЫ-ХРАНИЛИЩА для Materialized Views
-    -- ============================================
-    
+  07-table-incident-log.sql: |
+    CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.incident_log (
+        incident_id UUID          DEFAULT generateUUIDv4(),
+        detected_at DateTime64(3) DEFAULT now64(3),
+        type        String        DEFAULT '',
+        status      String        DEFAULT 'open',
+        user_id     String        DEFAULT '',
+        details     String        DEFAULT '{}',
+        updated_at  DateTime64(3) DEFAULT now64(3)
+    ) ENGINE = ReplacingMergeTree(updated_at)
+    PARTITION BY toYYYYMM(detected_at)
+    ORDER BY (incident_id);
+
+  08-table-export-job-log.sql: |
+    CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.export_job_log (
+        export_id       UUID          DEFAULT generateUUIDv4(),
+        status          String        DEFAULT 'pending',
+        format          String        DEFAULT 'csv',
+        created_at      DateTime64(3) DEFAULT now64(3),
+        completed_at    DateTime64(3) DEFAULT toDateTime64(0, 3),
+        download_url    String        DEFAULT '',
+        error_message   String        DEFAULT '',
+        file_size_bytes Int64         DEFAULT 0
+    ) ENGINE = ReplacingMergeTree(created_at)
+    ORDER BY (export_id);
+
+  10-mv-daily-msg-type-stats-store.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store (
         day      Date,
         msg_type String,
@@ -173,6 +183,7 @@ data:
     ORDER BY (day, msg_type)
     TTL toDateTime(day) + INTERVAL 365 DAY;
 
+  11-mv-daily-user-activity-store.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store (
         day         Date,
         usr_id      String,
@@ -182,6 +193,7 @@ data:
     ORDER BY (day, usr_id)
     TTL toDateTime(day) + INTERVAL 365 DAY;
 
+  12-mv-hourly-load-stats-store.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store (
         hour_ts     DateTime,
         msg_type    String,
@@ -191,11 +203,7 @@ data:
     ORDER BY (hour_ts, msg_type)
     TTL hour_ts + INTERVAL 90 DAY;
 
-  04-create-materialized-views.sql: |
-    -- ============================================
-    -- MATERIALIZED VIEWS
-    -- ============================================
-    
+  20-mv-daily-msg-type-stats-writer.sql: |
     CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_writer
     TO {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store
     AS SELECT
@@ -205,6 +213,7 @@ data:
     FROM {{ .Values.clickhouse.defaultDatabase }}.client_req_log
     GROUP BY day, msg_type;
 
+  21-mv-daily-user-activity-writer.sql: |
     CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_writer
     TO {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store
     AS SELECT
@@ -215,6 +224,7 @@ data:
     WHERE sess_user_id != ''
     GROUP BY day, usr_id;
 
+  22-mv-hourly-load-stats-writer.sql: |
     CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_writer
     TO {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store
     AS SELECT
@@ -224,40 +234,31 @@ data:
     FROM {{ .Values.clickhouse.defaultDatabase }}.client_req_log
     GROUP BY hour_ts, msg_type;
 
-  05-create-view-aliases.sql: |
-    -- ============================================
-    -- VIEW-АЛИАСЫ для чтения
-    -- ============================================
-    
+  30-view-daily-msg-type-stats.sql: |
     CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats AS
     SELECT day, msg_type, sum(cnt) AS cnt
     FROM {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store
     GROUP BY day, msg_type;
 
+  31-view-daily-user-activity.sql: |
     CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity AS
     SELECT day, usr_id, sum(event_count) AS event_count
     FROM {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store
     GROUP BY day, usr_id;
 
+  32-view-hourly-load-stats.sql: |
     CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats AS
     SELECT hour_ts, msg_type, sum(event_count) AS event_count
     FROM {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store
     GROUP BY hour_ts, msg_type;
 
-  06-grant-permissions.sql: |
-    -- ============================================
-    -- ПРАВА ДОСТУПА
-    -- ============================================
-    {{- range .Values.clickhouse.users }}
-    {{- if eq .name "ingestor" }}
-    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.account_log TO {{ .name }};
-    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.topic_log TO {{ .name }};
-    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.subscription_log TO {{ .name }};
-    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.message_log TO {{ .name }};
-    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.search_log TO {{ .name }};
-    GRANT INSERT ON {{ $.Values.clickhouse.defaultDatabase }}.client_req_log TO {{ .name }};
-    {{- else if eq .name "audit" }}
-    GRANT SELECT ON {{ $.Values.clickhouse.defaultDatabase }}.* TO {{ .name }};
-    {{- end }}
-    {{- end }}
-{{- end }}
+  90-grant-ingestor.sql: |
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.account_log TO ingestor;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.topic_log TO ingestor;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.subscription_log TO ingestor;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.message_log TO ingestor;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.search_log TO ingestor;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.client_req_log TO ingestor;
+
+  91-grant-audit.sql: |
+    GRANT SELECT ON {{ .Values.clickhouse.defaultDatabase }}.* TO audit;
