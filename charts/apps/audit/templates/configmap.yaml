@@ -12,4 +12,3 @@ data:
   EXPORT_STORAGE_TYPE: {{ .Values.env.EXPORT_STORAGE_TYPE | quote }}
   EXPORT_PVC_PATH: {{ .Values.env.EXPORT_PVC_PATH | quote }}
   CLICKHOUSE_POOL_SIZE: {{ .Values.env.CLICKHOUSE_POOL_SIZE | quote }}
-  CLICKHOUSE_FLYWAY_URL: {{ .Values.env.CLICKHOUSE_FLYWAY_URL }}
