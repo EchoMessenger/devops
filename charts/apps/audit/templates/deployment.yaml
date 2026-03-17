@@ -104,6 +104,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "audit-service.fullname" . }}-clickhouse
                   key: password
+            - name: CLICKHOUSE_FLYWAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: CLICKHOUSE_FLYWAY_URL
             - name: KEYCLOAK_ISSUER_URI
               valueFrom:
                 secretKeyRef:
