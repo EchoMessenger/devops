@@ -1,0 +1,188 @@
+{{- if .Values.clickhouse.initScripts.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "clickhouse.fullname" . }}-init-schema
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "clickhouse.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        {{- include "clickhouse.selectorLabels" . | nindent 8 }}
+        job: init-schema
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-schema
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              
+              CH_HOST="{{ include "clickhouse.fullname" . }}"
+              CH_PORT="{{ .Values.service.tcpPort }}"
+              CH_USER="{{ .Values.clickhouse.defaultUser }}"
+              CH_DB="{{ .Values.clickhouse.defaultDatabase }}"
+              
+              # Функция для выполнения запроса
+              ch_query() {
+                clickhouse-client --host "$CH_HOST" --port "$CH_PORT" \
+                  --user "$CH_USER" --password "$CLICKHOUSE_PASSWORD" \
+                  -q "$1"
+              }
+              
+              echo "============================================"
+              echo "  ClickHouse Schema Initialization"
+              echo "============================================"
+              echo ""
+              
+              # Ждём готовности ClickHouse
+              echo "Waiting for ClickHouse to be ready..."
+              until ch_query "SELECT 1" > /dev/null 2>&1; do
+                echo "  Waiting..."
+                sleep 3
+              done
+              echo "✓ ClickHouse is ready!"
+              echo ""
+              
+              # ============================================
+              # ПРОВЕРКА: нужна ли инициализация?
+              # ============================================
+              echo "Checking if initialization is needed..."
+              
+              # Проверяем существование базы данных
+              DB_EXISTS=$(ch_query "SELECT count() FROM system.databases WHERE name = '$CH_DB'" 2>/dev/null || echo "0")
+              
+              if [ "$DB_EXISTS" = "0" ]; then
+                echo "  Database '$CH_DB' does not exist - initialization required"
+                NEED_INIT=true
+              else
+                echo "  Database '$CH_DB' exists"
+                
+                # Проверяем количество таблиц
+                TABLE_COUNT=$(ch_query "SELECT count() FROM system.tables WHERE database = '$CH_DB'" 2>/dev/null || echo "0")
+                echo "  Found $TABLE_COUNT tables in '$CH_DB'"
+                
+                # Ожидаемое минимальное количество таблиц (основные + MV stores + views)
+                EXPECTED_MIN_TABLES=12
+                
+                if [ "$TABLE_COUNT" -lt "$EXPECTED_MIN_TABLES" ]; then
+                  echo "  Expected at least $EXPECTED_MIN_TABLES tables - initialization required"
+                  NEED_INIT=true
+                else
+                  # Проверяем наличие ключевых таблиц
+                  MISSING_TABLES=""
+                  for table in client_req_log account_log message_log mv_daily_msg_type_stats_store; do
+                    EXISTS=$(ch_query "SELECT count() FROM system.tables WHERE database = '$CH_DB' AND name = '$table'" 2>/dev/null || echo "0")
+                    if [ "$EXISTS" = "0" ]; then
+                      MISSING_TABLES="$MISSING_TABLES $table"
+                    fi
+                  done
+                  
+                  if [ -n "$MISSING_TABLES" ]; then
+                    echo "  Missing critical tables:$MISSING_TABLES - initialization required"
+                    NEED_INIT=true
+                  else
+                    echo "  All critical tables exist"
+                    NEED_INIT=false
+                  fi
+                fi
+              fi
+              
+              echo ""
+              
+              # ============================================
+              # ИНИЦИАЛИЗАЦИЯ (если нужна)
+              # ============================================
+              if [ "$NEED_INIT" = "true" ]; then
+                echo "============================================"
+                echo "  Running initialization scripts..."
+                echo "============================================"
+                echo ""
+                
+                for script in /docker-entrypoint-initdb.d/*.sql; do
+                  script_name=$(basename "$script")
+                  echo "=== Executing: $script_name ==="
+                  
+                  # Читаем и выполняем скрипт
+                  while IFS= read -r -d ';' cmd || [ -n "$cmd" ]; do
+                    # Убираем пустые строки и комментарии
+                    cmd=$(echo "$cmd" | sed '/^$/d' | sed '/^[[:space:]]*--/d' | tr '\n' ' ' | xargs)
+                    
+                    if [ -n "$cmd" ] && [ "${cmd:0:2}" != "--" ]; then
+                      # Показываем первые 80 символов команды
+                      echo "  → ${cmd:0:80}..."
+                      
+                      if clickhouse-client --host "$CH_HOST" --port "$CH_PORT" \
+                           --user "$CH_USER" --password "$CLICKHOUSE_PASSWORD" \
+                           --multiquery -q "$cmd;" 2>&1; then
+                        echo "    ✓ OK"
+                      else
+                        echo "    ⚠ Warning: Command may have failed (continuing anyway)"
+                      fi
+                    fi
+                  done < "$script"
+                  
+                  echo "✓ Completed: $script_name"
+                  echo ""
+                done
+                
+                echo "============================================"
+                echo "  Initialization completed!"
+                echo "============================================"
+              else
+                echo "============================================"
+                echo "  Schema already initialized - skipping"
+                echo "============================================"
+              fi
+              
+              echo ""
+              
+              # ============================================
+              # ВЕРИФИКАЦИЯ
+              # ============================================
+              echo "============================================"
+              echo "  Verification"
+              echo "============================================"
+              echo ""
+              
+              echo "Tables in '$CH_DB' database:"
+              ch_query "SELECT name FROM system.tables WHERE database = '$CH_DB' ORDER BY name" | while read -r table; do
+                echo "  • $table"
+              done
+              
+              echo ""
+              echo "Users:"
+              ch_query "SELECT name FROM system.users WHERE name IN ('admin', 'ingestor', 'audit')" | while read -r user; do
+                echo "  • $user"
+              done
+              
+              echo ""
+              echo "============================================"
+              echo "  Job completed successfully!"
+              echo "============================================"
+          env:
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickhouse.fullname" . }}-credentials-admin
+                  key: CLICKHOUSE_PASSWORD
+          volumeMounts:
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: initdb
+          configMap:
+            name: {{ include "clickhouse.fullname" . }}-initdb
+{{- end }}
