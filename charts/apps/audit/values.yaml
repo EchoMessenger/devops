@@ -1,0 +1,120 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/audit
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/actuator/prometheus"
+  prometheus.io/port: "8081"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 8080
+  healthPort: 8081
+
+ingress:
+  enabled: false
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+  hosts:
+    - host: audit.echo.internal
+      paths:
+        - path: /api/v1
+          pathType: Prefix
+  tls:
+    - secretName: echo-tls
+      hosts:
+        - audit.echo.internal
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+# PVC для хранения export файлов
+exportStorage:
+  enabled: true
+  storageClassName: local-path
+  size: 5Gi
+  mountPath: /exports
+
+env:
+  SERVER_PORT: "8080"
+  HEALTH_PORT: "8081"
+  EXPORT_STORAGE_TYPE: "pvc"
+  EXPORT_PVC_PATH: "/exports"
+  LOG_LEVEL: "debug"
+  CLICKHOUSE_POOL_SIZE: "10"
+
+# ExternalSecret ссылки (имена секретов в Vault/OpenBao)
+externalSecrets:
+  enabled: true
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao-global
+    kind: ClusterSecretStore
+  clickhouse:
+    remoteRef:
+      key: clickhouse/audit
+      # Ожидаемые поля в Vault: url, user, password
+  keycloak:
+    remoteRef:
+      key: keycloak/audit
+      # Ожидаемые поля в Vault: issuer-uri
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8081
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8081
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

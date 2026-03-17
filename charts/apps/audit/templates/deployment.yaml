@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "audit-service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "audit-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "audit-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        # Форсируем rollout при изменении ConfigMap или Secret
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "audit-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "audit-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      # tmpdir нужен для Spring Boot (temp files) при readOnlyRootFilesystem
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.exportStorage.enabled }}
+        - name: exports
+          persistentVolumeClaim:
+            claimName: {{ include "audit-service.fullname" . }}-exports
+        {{- end }}
+
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+
+          env:
+            # Некритичные параметры из ConfigMap
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: SERVER_PORT
+            - name: HEALTH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: HEALTH_PORT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: LOG_LEVEL
+            - name: EXPORT_STORAGE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_STORAGE_TYPE
+            - name: EXPORT_PVC_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_PVC_PATH
+
+            # Credentials из ExternalSecret (Vault → k8s Secret)
+            - name: CLICKHOUSE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-clickhouse
+                  key: url
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-clickhouse
+                  key: user
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-clickhouse
+                  key: password
+            - name: KEYCLOAK_ISSUER_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-keycloak
+                  key: issuer-uri
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.exportStorage.enabled }}
+            - name: exports
+              mountPath: {{ .Values.exportStorage.mountPath }}
+            {{- end }}
+
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
