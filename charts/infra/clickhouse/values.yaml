@@ -120,7 +120,7 @@ persistence:
   enabled: true
   storageClass: ""
   accessMode: ReadWriteOnce
-  size: 100Gi
+  size: 64Gi
   annotations: {}
   logs:
     enabled: false
