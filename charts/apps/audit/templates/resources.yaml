@@ -162,7 +162,7 @@ spec:
 ---
 # ── ExternalSecret (ClickHouse credentials из Vault) ─────────────────────────
 {{- if .Values.externalSecrets.enabled }}
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "audit-service.fullname" . }}-clickhouse
@@ -181,7 +181,7 @@ spec:
     - secretKey: url
       remoteRef:
         key: {{ .Values.externalSecrets.clickhouse.remoteRef.key }}
-        property: url
+        property: nativeUrl
     - secretKey: user
       remoteRef:
         key: {{ .Values.externalSecrets.clickhouse.remoteRef.key }}
@@ -192,7 +192,7 @@ spec:
         property: password
 
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "audit-service.fullname" . }}-keycloak
