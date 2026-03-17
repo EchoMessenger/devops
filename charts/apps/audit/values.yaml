@@ -83,6 +83,7 @@ env:
   EXPORT_PVC_PATH: "/exports"
   LOG_LEVEL: "debug"
   CLICKHOUSE_POOL_SIZE: "10"
+  CLICKHOUSE_FLYWAY_URL: "jdbc:clickhouse://clickhouse.clickhouse.svc.cluster.local:8123/audit"
 
 # ExternalSecret ссылки (имена секретов в Vault/OpenBao)
 externalSecrets:
