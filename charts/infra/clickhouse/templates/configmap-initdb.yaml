@@ -149,8 +149,106 @@ data:
     ORDER BY (log_timestamp, user_id)
     TTL toDateTime(log_timestamp) + INTERVAL 90 DAY;
 
-  03-grant-permissions.sql: |
-    -- Права для ingestor: только INSERT в указанные таблицы
+  03-create-analytics-tables.sql: |
+    -- ============================================
+    -- ТАБЛИЦЫ-ХРАНИЛИЩА для Materialized Views
+    -- ============================================
+    
+    -- Хранилище для статистики по типам сообщений (по дням)
+    CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store (
+        day      Date,
+        msg_type String,
+        cnt      UInt64
+    ) ENGINE = SummingMergeTree()
+    PARTITION BY toYYYYMM(day)
+    ORDER BY (day, msg_type)
+    TTL toDateTime(day) + INTERVAL 365 DAY;
+
+    -- Хранилище для активности пользователей (по дням)
+    CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store (
+        day         Date,
+        usr_id      String,
+        event_count UInt64
+    ) ENGINE = SummingMergeTree()
+    PARTITION BY toYYYYMM(day)
+    ORDER BY (day, usr_id)
+    TTL toDateTime(day) + INTERVAL 365 DAY;
+
+    -- Хранилище для почасовой нагрузки
+    CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store (
+        hour_ts     DateTime,
+        msg_type    String,
+        event_count UInt64
+    ) ENGINE = SummingMergeTree()
+    PARTITION BY toYYYYMM(hour_ts)
+    ORDER BY (hour_ts, msg_type)
+    TTL hour_ts + INTERVAL 90 DAY;
+
+  04-create-materialized-views.sql: |
+    -- ============================================
+    -- MATERIALIZED VIEWS (автоматическая агрегация)
+    -- ============================================
+    
+    -- MV: статистика по типам сообщений (daily)
+    CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_writer
+    TO {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store
+    AS SELECT
+        toDate(log_timestamp) AS day,
+        msg_type,
+        count() AS cnt
+    FROM {{ .Values.clickhouse.defaultDatabase }}.client_req_log
+    GROUP BY day, msg_type;
+
+    -- MV: активность пользователей (daily)
+    CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_writer
+    TO {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store
+    AS SELECT
+        toDate(log_timestamp) AS day,
+        sess_user_id AS usr_id,
+        count() AS event_count
+    FROM {{ .Values.clickhouse.defaultDatabase }}.client_req_log
+    WHERE sess_user_id != ''
+    GROUP BY day, usr_id;
+
+    -- MV: почасовая нагрузка
+    CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_writer
+    TO {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store
+    AS SELECT
+        toStartOfHour(log_timestamp) AS hour_ts,
+        msg_type,
+        count() AS event_count
+    FROM {{ .Values.clickhouse.defaultDatabase }}.client_req_log
+    GROUP BY hour_ts, msg_type;
+
+  05-create-view-aliases.sql: |
+    -- ============================================
+    -- VIEW-АЛИАСЫ для удобного чтения (для audit-service)
+    -- ============================================
+    
+    -- Алиас для чтения статистики по типам сообщений
+    CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats AS
+    SELECT day, msg_type, sum(cnt) AS cnt
+    FROM {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store
+    GROUP BY day, msg_type;
+
+    -- Алиас для чтения активности пользователей
+    CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity AS
+    SELECT day, usr_id, sum(event_count) AS event_count
+    FROM {{ .Values.clickhouse.defaultDatabase }}.mv_daily_user_activity_store
+    GROUP BY day, usr_id;
+
+    -- Алиас для чтения почасовой нагрузки
+    CREATE VIEW IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats AS
+    SELECT hour_ts, msg_type, sum(event_count) AS event_count
+    FROM {{ .Values.clickhouse.defaultDatabase }}.mv_hourly_load_stats_store
+    GROUP BY hour_ts, msg_type;
+
+  06-grant-permissions.sql: |
+    -- ============================================
+    -- ПРАВА ДОСТУПА
+    -- ============================================
+    
+    -- Права для ingestor: только INSERT в основные таблицы
     GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.account_log TO ingestor;
     GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.topic_log TO ingestor;
     GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.subscription_log TO ingestor;
@@ -158,7 +256,7 @@ data:
     GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.search_log TO ingestor;
     GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.client_req_log TO ingestor;
     
-    -- Права для audit: только SELECT из всех таблиц базы
+    -- Права для audit: SELECT из всех таблиц и VIEW
     GRANT SELECT ON {{ .Values.clickhouse.defaultDatabase }}.* TO audit;
     
     -- Admin уже имеет все права через access_management=1
