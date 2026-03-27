@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/echomessenger/webapp
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 imagePullSecrets:
   - name: ghcr-secret
@@ -16,7 +16,7 @@ tinodeServer:
   port: 6060
 
 keycloak:
-  url: "auth.echo-messenger.ru"
+  url: "https://auth.echo-messenger.ru"
   realm: "echo"
   clientId: "webapp"
   scope: "openid profile email"

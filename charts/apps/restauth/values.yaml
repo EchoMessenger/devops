@@ -19,9 +19,9 @@ app:
   loginValidationRe: "^[a-zA-Z0-9_.\\-@]{3,64}$"
 
 keycloak:
-  url: "auth.echo-messenger.ru"
-  realm: "tinode"
-  clientId: "tinode-server"
+  url: "https://auth.echo-messenger.ru"
+  realm: "echo"
+  clientId: "webapp"
 
 service:
   type: ClusterIP
