@@ -15,6 +15,12 @@ tinodeServer:
   host: tinode.tinode.svc.cluster.local
   port: 6060
 
+keycloak:
+  url: "auth.echo-messenger.ru"
+  realm: "echo"
+  clientId: "webapp"
+  scope: "openid profile email"
+
 service:
   name: webapp
   namespace: tinode
