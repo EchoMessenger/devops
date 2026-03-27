@@ -1,0 +1,104 @@
+{{- if .Values.clickhouse.initScripts.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "clickhouse.fullname" . }}-init-schema
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "clickhouse.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        {{- include "clickhouse.selectorLabels" . | nindent 8 }}
+        job: init-schema
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-schema
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              
+              CH_HOST="{{ include "clickhouse.fullname" . }}"
+              CH_PORT="{{ .Values.service.tcpPort }}"
+              CH_USER="{{ .Values.clickhouse.defaultUser }}"
+              CH_DB="{{ .Values.clickhouse.defaultDatabase }}"
+              
+              ch_query() {
+                clickhouse-client --host "$CH_HOST" --port "$CH_PORT" \
+                  --user "$CH_USER" --password "$CLICKHOUSE_PASSWORD" \
+                  "$@"
+              }
+              
+              echo "============================================"
+              echo "  ClickHouse Schema Initialization"
+              echo "============================================"
+              
+              # Ждём готовности
+              echo "Waiting for ClickHouse..."
+              until ch_query -q "SELECT 1" > /dev/null 2>&1; do
+                sleep 3
+              done
+              echo "✓ ClickHouse is ready!"
+              
+              # Проверяем нужна ли инициализация
+              TABLE_COUNT=$(ch_query -q "SELECT count() FROM system.tables WHERE database = '$CH_DB'" 2>/dev/null || echo "0")
+              EXPECTED_TABLES=15
+              
+              if [ "$TABLE_COUNT" -ge "$EXPECTED_TABLES" ]; then
+                echo "✓ Schema already initialized ($TABLE_COUNT tables found)"
+                echo ""
+                echo "Tables:"
+                ch_query -q "SELECT name FROM system.tables WHERE database = '$CH_DB' ORDER BY name"
+                exit 0
+              fi
+              
+              echo "Found $TABLE_COUNT tables, expected $EXPECTED_TABLES. Running init scripts..."
+              echo ""
+              
+              # Выполняем все SQL файлы по порядку
+              for script in /docker-entrypoint-initdb.d/*.sql; do
+                script_name=$(basename "$script")
+                echo "=== $script_name ==="
+                
+                if ch_query --multiquery < "$script" 2>&1; then
+                  echo "✓ OK"
+                else
+                  echo "⚠ Warning (continuing)"
+                fi
+              done
+              
+              echo ""
+              echo "============================================"
+              echo "  Verification"
+              echo "============================================"
+              echo "Tables in '$CH_DB':"
+              ch_query -q "SELECT name FROM system.tables WHERE database = '$CH_DB' ORDER BY name"
+              
+              echo ""
+              echo "✓ Initialization completed!"
+          env:
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickhouse.fullname" . }}-credentials-admin
+                  key: CLICKHOUSE_PASSWORD
+          volumeMounts:
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: initdb
+          configMap:
+            name: {{ include "clickhouse.fullname" . }}-initdb
+{{- end }}

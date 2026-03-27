@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ingestor.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ingestor.labels" . | nindent 4 }}
+data:
+  KAFKA_BROKERS: {{ .Values.kafka.brokers | quote }}
+  KAFKA_GROUP_ID: {{ .Values.kafka.groupId | quote }}
+  KAFKA_TOPIC_PREFIX: {{ .Values.kafka.topicPrefix | quote }}
+  KAFKA_TLS_ENABLE: {{ .Values.kafka.tls.enable | toString | quote }}
+  KAFKA_SASL_ENABLE: {{ .Values.kafka.sasl.enable | toString | quote }}
+  KAFKA_SASL_MECHANISM: {{ .Values.kafka.sasl.mechanism | quote }}
+  KAFKA_SASL_USERNAME: {{ .Values.kafka.sasl.username | quote }}
+
+  CLICKHOUSE_ADDR: {{ .Values.clickhouse.addr | quote }}
+  CLICKHOUSE_DB: {{ .Values.clickhouse.db | quote }}
+
+  BATCH_SIZE: {{ .Values.batch.size | quote }}
+  BATCH_TIMEOUT: {{ .Values.batch.timeout | quote }}
+
+  RETRY_MAX: {{ .Values.retry.max | quote }}
+  RETRY_BASE_DELAY: {{ .Values.retry.baseDelay | quote }}
+
+  DLQ_TOPIC: {{ .Values.dlq.topic | quote }}
+
+  LOG_LEVEL: {{ .Values.logLevel | quote }}
+  HEALTH_ADDR: {{ .Values.healthAddr | quote }}

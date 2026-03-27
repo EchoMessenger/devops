@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ingestor
+description: Kafka - ClickHouse ingestor for EchoMessenger audit service
+type: application
+version: 0.1.0
+appVersion: "latest"

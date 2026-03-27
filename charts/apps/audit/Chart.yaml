@@ -1,0 +1,15 @@
+apiVersion: v2
+name: audit-service
+description: Audit Service for EchoMessenger — REST API над ClickHouse audit данными
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+
+keywords:
+  - audit
+  - clickhouse
+  - spring-boot
+  - kotlin
+
+maintainers:
+  - name: echomessenger-platform

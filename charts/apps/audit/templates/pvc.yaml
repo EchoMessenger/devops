@@ -1,0 +1,16 @@
+{{- if .Values.exportStorage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "audit-service.fullname" . }}-exports
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "audit-service.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.exportStorage.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.exportStorage.size }}
+{{- end }}

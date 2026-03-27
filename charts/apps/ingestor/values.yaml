@@ -1,0 +1,119 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/ingestor
+  pullPolicy: Always
+  # Переопределяется в CI через --set image.tag=$VERSION
+  tag: "latest"
+
+# Секрет для пулла образа из ghcr — создаётся через ExternalSecret
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ---- Kafka ----
+kafka:
+  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  groupId: "ingestor"
+  topicPrefix: "tinode"
+  tls:
+    enable: false
+  sasl:
+    enable: true
+    mechanism: "SCRAM-SHA-512"
+    username: "user"
+    # Пароль берётся из Secret ingestor-kafka-user.password
+    # созданного через ExternalSecret (см. templates/external-secret.yaml)
+
+# ---- ClickHouse ----
+clickhouse:
+  addr: "clickhouse.clickhouse.svc.cluster.local:9000"
+  db: "audit"
+  # Путь к секрету в OpenBao откуда берутся username и password.
+  # Формат: secret/<path> — без /data/ (ESO добавляет сам для KV v2).
+  openbaoPath: "clickhouse/ingestor"
+  # username и password берутся из Secret ingestor-clickhouse
+  # созданного через ExternalSecret из openbaoPath выше.
+
+# ---- Batching ----
+batch:
+  size: "1000"
+  timeout: "5s"
+
+# ---- Retry ----
+retry:
+  max: "3"
+  baseDelay: "500ms"
+
+# ---- DLQ ----
+dlq:
+  topic: "tinode.dlq"
+
+# ---- Service (health/metrics HTTP) ----
+service:
+  type: ClusterIP
+  port: 8081
+
+# ---- Probes ----
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8081
+  initialDelaySeconds: 15
+  periodSeconds: 30
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8081
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 3
+
+# ---- Resources ----
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# ---- Security ----
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534   # nobody
+  fsGroup: 65534
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# ---- Logging ----
+logLevel: "debug"
+healthAddr: ":8081"
+
+# ---- OpenBao / ExternalSecrets ----
+openbao:
+  resyncInterval: "1h"
+  # Путь к секретам в OpenBao, например: secret/data/kafka/users
+  secretsPath: "kafka"
+
+# ---- Node scheduling ----
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ---- Prometheus ----
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8081"
+  prometheus.io/path: "/metrics"

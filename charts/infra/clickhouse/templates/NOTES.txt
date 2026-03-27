@@ -1,0 +1,77 @@
+=======================================================
+  ClickHouse has been installed!
+=======================================================
+
+Namespace: {{ .Release.Namespace }}
+Release:   {{ .Release.Name }}
+
+=======================================================
+  CONNECTION INFO
+=======================================================
+
+HTTP URL (internal):
+  {{ include "clickhouse.httpUrl" . }}
+
+JDBC URL:
+  {{ include "clickhouse.jdbcUrl" . }}
+
+TCP URL:
+  {{ include "clickhouse.tcpUrl" . }}
+
+=======================================================
+  CREDENTIALS
+=======================================================
+
+Admin credentials secret:
+  {{ include "clickhouse.fullname" . }}-credentials-admin
+
+To get admin password:
+  kubectl get secret {{ include "clickhouse.fullname" . }}-credentials-admin \
+    -n {{ .Release.Namespace }} \
+    -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d
+
+User credentials:
+{{- range .Values.clickhouse.users }}
+  - {{ include "clickhouse.fullname" $ }}-credentials-{{ .name }}
+{{- end }}
+
+=======================================================
+  PORT FORWARDING
+=======================================================
+
+HTTP (for queries):
+  kubectl port-forward svc/{{ include "clickhouse.fullname" . }} {{ .Values.service.httpPort }}:{{ .Values.service.httpPort }} -n {{ .Release.Namespace }}
+
+Native TCP:
+  kubectl port-forward svc/{{ include "clickhouse.fullname" . }} {{ .Values.service.tcpPort }}:{{ .Values.service.tcpPort }} -n {{ .Release.Namespace }}
+
+=======================================================
+  VERIFY INSTALLATION
+=======================================================
+
+Check pod status:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "clickhouse.name" . }}
+
+Check logs:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "clickhouse.name" . }}
+
+Test connection:
+  kubectl exec -it {{ include "clickhouse.fullname" . }}-0 -n {{ .Release.Namespace }} -- \
+    clickhouse-client --user {{ .Values.clickhouse.defaultUser }} --password $(kubectl get secret {{ include "clickhouse.fullname" . }}-credentials-admin -n {{ .Release.Namespace }} -o jsonpath='{.data.CLICKHOUSE_PASSWORD}' | base64 -d) \
+    -q "SELECT version()"
+
+{{- if .Values.pushSecret.enabled }}
+
+=======================================================
+  PUSH SECRET
+=======================================================
+
+Secrets are being pushed to external secret store:
+  - {{ .Values.pushSecret.paths.admin }}
+{{- range .Values.clickhouse.users }}
+  - {{ index $.Values.pushSecret.paths .name }}
+{{- end }}
+
+Check PushSecret status:
+  kubectl get pushsecret -n {{ .Release.Namespace }}
+{{- end }}

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "audit-service.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "audit-service.labels" . | nindent 4 }}
+data:
+  SERVER_PORT: {{ .Values.env.SERVER_PORT | quote }}
+  HEALTH_PORT: {{ .Values.env.HEALTH_PORT | quote }}
+  LOG_LEVEL: {{ .Values.env.LOG_LEVEL | quote }}
+  EXPORT_STORAGE_TYPE: {{ .Values.env.EXPORT_STORAGE_TYPE | quote }}
+  EXPORT_PVC_PATH: {{ .Values.env.EXPORT_PVC_PATH | quote }}
+  CLICKHOUSE_POOL_SIZE: {{ .Values.env.CLICKHOUSE_POOL_SIZE | quote }}
