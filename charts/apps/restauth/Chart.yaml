@@ -1,0 +1,6 @@
+apiVersion: v2
+name: restauth
+description: REST authentication service for Tinode (Keycloak backend)
+type: application
+version: 0.1.0
+appVersion: "latest"
