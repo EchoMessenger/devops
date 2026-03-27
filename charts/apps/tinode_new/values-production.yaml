@@ -50,6 +50,10 @@ encryption:
   authTokenKey: ""  # Будет загружен из OpenBao
   uidEncryptionKey: ""  # Будет загружен из OpenBao
 
+auth:
+  rest:
+    serverUrl: "http://restauth.restauth.svc.cluster.local:8000/"
+
 # Хранилище медиа на S3
 media:
   handler: "s3"
