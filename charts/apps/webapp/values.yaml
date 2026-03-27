@@ -19,7 +19,7 @@ keycloak:
   url: "https://auth.echo-messenger.ru"
   realm: "echo"
   clientId: "webapp"
-  scope: "openid profile email"
+  scope: "openid profile email groups"
 
 service:
   name: webapp
