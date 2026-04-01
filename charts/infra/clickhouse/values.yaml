@@ -29,7 +29,7 @@ clickhouse:
         - audit
     - name: audit
       password: ""  # Генерируется автоматически
-      profile: readonly
+      profile: audit
       quota: default
       databases:
         - audit
@@ -43,6 +43,11 @@ clickhouse:
     
     readonly:
       readonly: 1
+      max_memory_usage: 5000000000
+      max_execution_time: 60
+
+    audit:
+      readonly: 0
       max_memory_usage: 5000000000
       max_execution_time: 60
     

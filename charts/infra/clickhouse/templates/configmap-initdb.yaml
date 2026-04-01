@@ -262,3 +262,5 @@ data:
 
   91-grant-audit.sql: |
     GRANT SELECT ON {{ .Values.clickhouse.defaultDatabase }}.* TO audit;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.export_job_log TO audit;
+    GRANT INSERT ON {{ .Values.clickhouse.defaultDatabase }}.incident_log TO audit;

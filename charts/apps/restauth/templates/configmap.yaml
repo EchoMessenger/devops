@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "restauth.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "restauth.labels" . | nindent 4 }}
+data:
+  HOST: {{ .Values.app.host | quote }}
+  PORT: {{ .Values.app.port | quote }}
+  DEBUG: {{ .Values.app.debug | quote }}
+
+  KEYCLOAK_URL: {{ .Values.keycloak.url | quote }}
+  KEYCLOAK_REALM: {{ .Values.keycloak.realm | quote }}
+  KEYCLOAK_CLIENT_ID: {{ .Values.keycloak.clientId | quote }}
+
+  RESTRICTED_TAG_NS: {{ .Values.app.restrictedTagNs | quote }}
+  LOGIN_VALIDATION_RE: {{ .Values.app.loginValidationRe | quote }}

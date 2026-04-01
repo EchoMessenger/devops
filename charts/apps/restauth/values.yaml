@@ -1,0 +1,90 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/echomessenger/restauth
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+app:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+  restrictedTagNs: "rest,email,uname"
+  loginValidationRe: "^[a-zA-Z0-9_.\\-@]{3,64}$"
+
+keycloak:
+  url: "https://auth.echo-messenger.ru"
+  realm: "echo"
+  clientId: "webapp"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+externalSecrets:
+  enabled: true
+  refreshInterval: 1h
+  secretStore:
+    name: openbao-global
+    kind: ClusterSecretStore
+  databasePath: "restauth/database"
+
+ingress:
+  enabled: false
+  className: traefik
+  host: restauth.example.com
+  path: /
+  pathType: Prefix
+  tlsSecretName: restauth-tls
+
+certManager:
+  issuerName: letsencrypt-prod
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

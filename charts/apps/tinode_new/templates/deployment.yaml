@@ -259,6 +259,8 @@ spec:
         # Разное
         - name: DEFAULT_COUNTRY_CODE
           value: {{ .Values.defaultCountryCode | quote }}
+        - name: SERVER_URL
+          value: {{ .Values.auth.rest.serverUrl | quote }}
         - name: SERVER_STATUS_PATH
           value: {{ .Values.serverStatusPath | quote }}
         

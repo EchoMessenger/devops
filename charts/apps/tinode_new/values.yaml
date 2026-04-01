@@ -168,6 +168,11 @@ accountGc:
 # Дефолтный код страны
 defaultCountryCode: "RU"
 
+# REST authentication (Tinode auth_config.rest)
+auth:
+  rest:
+    serverUrl: "http://restauth.restauth.svc.cluster.local:8000/"
+
 # Путь для статуса сервера
 serverStatusPath: ""
 

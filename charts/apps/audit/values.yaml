@@ -40,20 +40,21 @@ service:
   healthPort: 8081
 
 ingress:
-  enabled: false
+  enabled: true
   className: traefik
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: audit.echo.internal
+    - host: audit.echo-messenger.ru
       paths:
         - path: /api/v1
           pathType: Prefix
   tls:
     - secretName: echo-tls
       hosts:
-        - audit.echo.internal
+        - audit.echo-messenger.ru
 
 resources:
   requests:
