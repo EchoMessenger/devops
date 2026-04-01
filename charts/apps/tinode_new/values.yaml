@@ -56,7 +56,7 @@ ingress:
   className: "traefik"
   annotations:
     # Минимальный набор для traefik; websocket'ы работают без специальных аннотаций.
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
+    traefik.ingress.kubernetes.io/router.entrypoints: web
   hosts:
     - host: tinode.echo-messenger.ru
       paths:
