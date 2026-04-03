@@ -29,7 +29,19 @@ spec:
             - -c
             - |
               set -e
-              mc alias set local http://{{ include "minio.fullname" . }}:{{ .Values.service.apiPort }} "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+              alias_ready=false
+              for i in $(seq 1 60); do
+                if mc alias set local http://{{ include "minio.fullname" . }}:{{ .Values.service.apiPort }} "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; then
+                  alias_ready=true
+                  break
+                fi
+                echo "Waiting for MinIO API to become ready (${i}/60)..."
+                sleep 2
+              done
+              if [ "$alias_ready" != "true" ]; then
+                echo "ERROR: MinIO API did not become ready in time"
+                exit 1
+              fi
               mc mb --ignore-existing "local/{{ .Values.minio.bucket.name }}"
               {{- if .Values.minio.cors.enabled }}
               cat <<'EOF' >/tmp/cors.xml
