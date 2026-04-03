@@ -49,19 +49,20 @@ service:
 
 # Ingress для доступа извне
 ingress:
-  enabled: false
-  className: "nginx"
-  annotations: {}
-    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  # Для локальной разработки: добавьте в /etc/hosts запись на IP ingress-контроллера
+  # (например, 127.0.0.1 tinode.echo-messenger.ru) и укажите этот хост в webapp.
+  enabled: true
+  # Должен совпадать с ingress-контроллером в кластере (в нашем webapp используется traefik).
+  className: "traefik"
+  annotations:
+    # Минимальный набор для traefik; websocket'ы работают без специальных аннотаций.
+    traefik.ingress.kubernetes.io/router.entrypoints: web
   hosts:
-    - host: tinode.example.com
+    - host: tinode.echo-messenger.ru
       paths:
         - path: /
           pathType: Prefix
   tls: []
-  #  - secretName: tinode-tls
-  #    hosts:
-  #      - tinode.example.com
 
 # База данных
 database:
