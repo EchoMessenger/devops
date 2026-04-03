@@ -169,9 +169,15 @@ data:
         completed_at    DateTime64(3) DEFAULT toDateTime64(0, 3),
         download_url    String        DEFAULT '',
         error_message   String        DEFAULT '',
-        file_size_bytes Int64         DEFAULT 0
-    ) ENGINE = ReplacingMergeTree(created_at)
+        file_size_bytes Int64         DEFAULT 0,
+        row_version     UInt64        DEFAULT toUInt64(toUnixTimestamp64Milli(now64(3)))
+    ) ENGINE = ReplacingMergeTree(row_version)
     ORDER BY (export_id);
+
+  09-alter-export-job-log-row-version.sql: |
+    ALTER TABLE {{ .Values.clickhouse.defaultDatabase }}.export_job_log
+    ADD COLUMN IF NOT EXISTS row_version UInt64
+    DEFAULT toUInt64(toUnixTimestamp64Milli(now64(3)));
 
   10-mv-daily-msg-type-stats-store.sql: |
     CREATE TABLE IF NOT EXISTS {{ .Values.clickhouse.defaultDatabase }}.mv_daily_msg_type_stats_store (
