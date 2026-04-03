@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: quay.io/minio/minio
-  tag: RELEASE.2025-09-07T16-13-09Z
+  tag: latest
   pullPolicy: IfNotPresent
 
 service:
@@ -25,7 +25,7 @@ minio:
 
 mcImage:
   repository: minio/mc
-  tag: RELEASE.2025-09-07T16-13-09Z
+  tag: latest
   pullPolicy: IfNotPresent
 
 resources:
