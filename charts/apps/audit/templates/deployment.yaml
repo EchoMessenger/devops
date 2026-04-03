@@ -125,6 +125,11 @@ spec:
                   name: {{ include "audit-service.fullname" . }}-config
                   key: EXPORT_S3_ENDPOINT
             {{- end }}
+            - name: EXPORT_S3_PUBLIC_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_PUBLIC_ENDPOINT
             - name: EXPORT_S3_PATH_STYLE_ACCESS
               valueFrom:
                 configMapKeyRef:

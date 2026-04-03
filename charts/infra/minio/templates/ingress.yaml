@@ -26,7 +26,7 @@ spec:
               service:
                 name: {{ include "minio.fullname" $ }}
                 port:
-                  number: {{ $.Values.service.consolePort }}
+                  number: {{ if eq $.Values.ingress.servicePort "api" }}{{ $.Values.service.apiPort }}{{ else }}{{ $.Values.service.consolePort }}{{ end }}
           {{- end }}
     {{- end }}
   {{- if .Values.ingress.tls }}
