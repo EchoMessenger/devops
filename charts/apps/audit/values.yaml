@@ -89,7 +89,7 @@ env:
   EXPORT_S3_PATH_STYLE_ACCESS: "true"
   EXPORT_S3_KEY_PREFIX: "audit/exports"
   EXPORT_S3_PRESIGN_EXPIRY_SECONDS: "900"
-  RESTAUTH_BASE_URL: "http://restauth:8000"
+  RESTAUTH_BASE_URL: "http://restauth.restauth.svc.cluster.local:8000"
   LOG_LEVEL: "debug"
   CLICKHOUSE_POOL_SIZE: "10"
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.echo-messenger.ru/realms/echo"
