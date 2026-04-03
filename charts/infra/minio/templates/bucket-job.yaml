@@ -32,19 +32,27 @@ spec:
               mc alias set local http://{{ include "minio.fullname" . }}:{{ .Values.service.apiPort }} "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
               mc mb --ignore-existing "local/{{ .Values.minio.bucket.name }}"
               {{- if .Values.minio.cors.enabled }}
-              cat <<'EOF' >/tmp/cors.json
-              {
-                "CORSRules": [
-                  {
-                    "AllowedOrigins": [{{- range $i, $origin := .Values.minio.cors.allowedOrigins }}{{ if $i }}, {{ end }}"{{ $origin }}"{{- end }}],
-                    "AllowedMethods": [{{- range $i, $method := .Values.minio.cors.allowedMethods }}{{ if $i }}, {{ end }}"{{ $method }}"{{- end }}],
-                    "AllowedHeaders": [{{- range $i, $header := .Values.minio.cors.allowedHeaders }}{{ if $i }}, {{ end }}"{{ $header }}"{{- end }}],
-                    "ExposeHeaders": [{{- range $i, $header := .Values.minio.cors.exposeHeaders }}{{ if $i }}, {{ end }}"{{ $header }}"{{- end }}],
-                    "MaxAgeSeconds": {{ .Values.minio.cors.maxAgeSeconds }}
-                  }
-                ]
-              }
+              cat <<'EOF' >/tmp/cors.xml
+              <CORSConfiguration>
+                <CORSRule>
+                  {{- range .Values.minio.cors.allowedOrigins }}
+                  <AllowedOrigin>{{ . }}</AllowedOrigin>
+                  {{- end }}
+                  {{- range .Values.minio.cors.allowedMethods }}
+                  <AllowedMethod>{{ . }}</AllowedMethod>
+                  {{- end }}
+                  {{- range .Values.minio.cors.allowedHeaders }}
+                  <AllowedHeader>{{ . }}</AllowedHeader>
+                  {{- end }}
+                  {{- range .Values.minio.cors.exposeHeaders }}
+                  <ExposeHeader>{{ . }}</ExposeHeader>
+                  {{- end }}
+                  <MaxAgeSeconds>{{ .Values.minio.cors.maxAgeSeconds }}</MaxAgeSeconds>
+                </CORSRule>
+              </CORSConfiguration>
               EOF
-              mc cors set "local/{{ .Values.minio.bucket.name }}" /tmp/cors.json
+              if ! mc cors set "local/{{ .Values.minio.bucket.name }}" /tmp/cors.xml; then
+                echo "WARN: failed to apply bucket CORS; continuing"
+              fi
               {{- end }}
 {{- end }}
