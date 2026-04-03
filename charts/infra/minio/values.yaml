@@ -1,0 +1,59 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/minio/minio
+  tag: RELEASE.2025-09-07T16-13-09Z
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  apiPort: 9000
+  consolePort: 9001
+
+storage:
+  size: 20Gi
+  storageClassName: local-path
+
+minio:
+  rootUser: admin
+  rootPassword: changeme-minio
+  dataPath: /data
+  region: us-east-1
+  bucket:
+    create: true
+    name: audit-exports
+
+mcImage:
+  repository: minio/mc
+  tag: RELEASE.2025-09-07T16-13-09Z
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 150m
+  limits:
+    memory: 1Gi
+    cpu: 1000m
+
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  hosts:
+    - host: minio.echo-messenger.ru
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+pushSecret:
+  enabled: true
+  secretStoreName: openbao-global
+  remotePath: audit/s3
+  useProperty: true
+  refreshInterval: "1h"
+  deletionPolicy: None
+
+nameOverride: ""
+fullnameOverride: ""

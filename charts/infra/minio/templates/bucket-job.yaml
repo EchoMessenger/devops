@@ -1,0 +1,34 @@
+{{- if .Values.minio.bucket.create }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "minio.fullname" . }}-bucket-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "minio.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: "{{ .Values.mcImage.repository }}:{{ .Values.mcImage.tag }}"
+          imagePullPolicy: {{ .Values.mcImage.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ include "minio.fullname" . }}-credentials
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              mc alias set local http://{{ include "minio.fullname" . }}:{{ .Values.service.apiPort }} "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+              mc mb --ignore-existing "local/{{ .Values.minio.bucket.name }}"
+{{- end }}

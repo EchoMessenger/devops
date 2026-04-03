@@ -80,11 +80,30 @@ exportStorage:
 env:
   SERVER_PORT: "8080"
   HEALTH_PORT: "8081"
-  EXPORT_STORAGE_TYPE: "pvc"
+  EXPORT_STORAGE_TYPE: "s3"
   EXPORT_PVC_PATH: "/exports"
+  EXPORT_S3_BUCKET: "audit-exports"
+  EXPORT_S3_REGION: "us-east-1"
+  EXPORT_S3_ENDPOINT: ""
+  EXPORT_S3_PATH_STYLE_ACCESS: "false"
+  EXPORT_S3_KEY_PREFIX: "audit/exports"
+  EXPORT_S3_PRESIGN_EXPIRY_SECONDS: "900"
+  RESTAUTH_BASE_URL: "http://restauth:8000"
   LOG_LEVEL: "debug"
   CLICKHOUSE_POOL_SIZE: "10"
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "https://auth.echo-messenger.ru/realms/echo"
+
+s3Credentials:
+  # Если указан existingSecret, chart не создаёт свой secret для S3
+  existingSecret: ""
+  accessKeyKey: access-key
+  secretKeyKey: secret-key
+
+s3ConfigFromSecret:
+  enabled: true
+  endpointKey: endpoint
+  regionKey: region
+  bucketKey: bucket
 
 # ExternalSecret ссылки (имена секретов в Vault/OpenBao)
 externalSecrets:
@@ -101,6 +120,11 @@ externalSecrets:
     remoteRef:
       key: platform/keycloak
       # Ожидаемые поля в Vault: issuer-uri
+  s3:
+    enabled: true
+    remoteRef:
+      key: audit/s3
+      # Ожидаемые поля в Vault: accessKey, secretKey, endpoint, region, bucket
 
 livenessProbe:
   httpGet:
