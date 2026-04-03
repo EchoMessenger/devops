@@ -65,7 +65,7 @@ ingress:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: echo-tls
+    - secretName: minio-tls
       hosts:
         - minio.echo-messenger.ru
 
