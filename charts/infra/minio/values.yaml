@@ -1,0 +1,81 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/minio/minio
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  apiPort: 9000
+  consolePort: 9001
+
+storage:
+  size: 20Gi
+  storageClassName: local-path
+
+minio:
+  rootUser: admin
+  rootPassword: changeme-minio
+  dataPath: /data
+  region: us-east-1
+  bucket:
+    create: true
+    name: audit-exports
+  cors:
+    enabled: true
+    allowedOrigins:
+      - https://www.echo-messenger.ru
+      - https://echo-messenger.ru
+    allowedMethods:
+      - GET
+      - HEAD
+    allowedHeaders:
+      - "*"
+    exposeHeaders:
+      - ETag
+      - Content-Disposition
+      - Content-Type
+    maxAgeSeconds: 3600
+
+mcImage:
+  repository: minio/mc
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 150m
+  limits:
+    memory: 1Gi
+    cpu: 1000m
+
+ingress:
+  enabled: true
+  className: traefik
+  servicePort: api
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: minio.echo-messenger.ru
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: minio-tls
+      hosts:
+        - minio.echo-messenger.ru
+
+pushSecret:
+  enabled: true
+  secretStoreName: openbao-global
+  remotePath: audit/s3
+  useProperty: true
+  refreshInterval: "1h"
+  deletionPolicy: None
+
+nameOverride: ""
+fullnameOverride: ""

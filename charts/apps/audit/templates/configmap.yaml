@@ -8,7 +8,15 @@ metadata:
 data:
   SERVER_PORT: {{ .Values.env.SERVER_PORT | quote }}
   HEALTH_PORT: {{ .Values.env.HEALTH_PORT | quote }}
+  RESTAUTH_BASE_URL: {{ .Values.env.RESTAUTH_BASE_URL | quote }}
   LOG_LEVEL: {{ .Values.env.LOG_LEVEL | quote }}
   EXPORT_STORAGE_TYPE: {{ .Values.env.EXPORT_STORAGE_TYPE | quote }}
   EXPORT_PVC_PATH: {{ .Values.env.EXPORT_PVC_PATH | quote }}
+  EXPORT_S3_BUCKET: {{ .Values.env.EXPORT_S3_BUCKET | quote }}
+  EXPORT_S3_REGION: {{ .Values.env.EXPORT_S3_REGION | quote }}
+  EXPORT_S3_ENDPOINT: {{ .Values.env.EXPORT_S3_ENDPOINT | quote }}
+  EXPORT_S3_PUBLIC_ENDPOINT: {{ .Values.env.EXPORT_S3_PUBLIC_ENDPOINT | quote }}
+  EXPORT_S3_PATH_STYLE_ACCESS: {{ .Values.env.EXPORT_S3_PATH_STYLE_ACCESS | quote }}
+  EXPORT_S3_KEY_PREFIX: {{ .Values.env.EXPORT_S3_KEY_PREFIX | quote }}
+  EXPORT_S3_PRESIGN_EXPIRY_SECONDS: {{ .Values.env.EXPORT_S3_PRESIGN_EXPIRY_SECONDS | quote }}
   CLICKHOUSE_POOL_SIZE: {{ .Values.env.CLICKHOUSE_POOL_SIZE | quote }}

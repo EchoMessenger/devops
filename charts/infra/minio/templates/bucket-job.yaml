@@ -1,0 +1,70 @@
+{{- if .Values.minio.bucket.create }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "minio.fullname" . }}-bucket-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "minio.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: "{{ .Values.mcImage.repository }}:{{ .Values.mcImage.tag }}"
+          imagePullPolicy: {{ .Values.mcImage.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ include "minio.fullname" . }}-credentials
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              alias_ready=false
+              for i in $(seq 1 60); do
+                if mc alias set local http://{{ include "minio.fullname" . }}:{{ .Values.service.apiPort }} "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; then
+                  alias_ready=true
+                  break
+                fi
+                echo "Waiting for MinIO API to become ready (${i}/60)..."
+                sleep 2
+              done
+              if [ "$alias_ready" != "true" ]; then
+                echo "ERROR: MinIO API did not become ready in time"
+                exit 1
+              fi
+              mc mb --ignore-existing "local/{{ .Values.minio.bucket.name }}"
+              {{- if .Values.minio.cors.enabled }}
+              cat <<'EOF' >/tmp/cors.xml
+              <CORSConfiguration>
+                <CORSRule>
+                  {{- range .Values.minio.cors.allowedOrigins }}
+                  <AllowedOrigin>{{ . }}</AllowedOrigin>
+                  {{- end }}
+                  {{- range .Values.minio.cors.allowedMethods }}
+                  <AllowedMethod>{{ . }}</AllowedMethod>
+                  {{- end }}
+                  {{- range .Values.minio.cors.allowedHeaders }}
+                  <AllowedHeader>{{ . }}</AllowedHeader>
+                  {{- end }}
+                  {{- range .Values.minio.cors.exposeHeaders }}
+                  <ExposeHeader>{{ . }}</ExposeHeader>
+                  {{- end }}
+                  <MaxAgeSeconds>{{ .Values.minio.cors.maxAgeSeconds }}</MaxAgeSeconds>
+                </CORSRule>
+              </CORSConfiguration>
+              EOF
+              if ! mc cors set "local/{{ .Values.minio.bucket.name }}" /tmp/cors.xml; then
+                echo "WARN: failed to apply bucket CORS; continuing"
+              fi
+              {{- end }}
+{{- end }}

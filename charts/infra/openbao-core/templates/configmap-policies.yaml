@@ -74,6 +74,14 @@ data:
       capabilities = ["create", "read", "update", "delete", "list"]
     }
 
+    # audit/s3 - PushSecret из MinIO + ExternalSecret в audit
+    path "secret/data/audit/s3" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/audit/s3" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
     # restauth/database - полный доступ
     path "secret/data/restauth/database" {
       capabilities = ["create", "read", "update", "delete"]
@@ -81,18 +89,3 @@ data:
     path "secret/metadata/restauth/database" {
       capabilities = ["create", "read", "update", "delete", "list"]
     }
-
-
-bao policy read eso > /tmp/eso.hcl
-cat <<'EOF' >> /tmp/eso.hcl
-
-# restauth/database - полный доступ
-path "secret/data/restauth/database" {
-capabilities = ["create", "read", "update", "delete"]
-}
-path "secret/metadata/restauth/database" {
-capabilities = ["create", "read", "update", "delete", "list"]
-}
-EOF
-bao policy write eso /tmp/eso.hcl
-rm /tmp/eso.hcl
