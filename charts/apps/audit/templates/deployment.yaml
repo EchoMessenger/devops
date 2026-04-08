@@ -145,6 +145,36 @@ spec:
                 configMapKeyRef:
                   name: {{ include "audit-service.fullname" . }}-config
                   key: EXPORT_S3_PRESIGN_EXPIRY_SECONDS
+            - name: EXPORT_S3_MAX_CONNECTIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_MAX_CONNECTIONS
+            - name: EXPORT_S3_CONNECTION_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_CONNECTION_TIMEOUT_MS
+            - name: EXPORT_S3_SOCKET_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_SOCKET_TIMEOUT_MS
+            - name: EXPORT_S3_CONNECTION_ACQUISITION_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_CONNECTION_ACQUISITION_TIMEOUT_MS
+            - name: EXPORT_S3_CONNECTION_MAX_IDLE_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_CONNECTION_MAX_IDLE_MS
+            - name: EXPORT_S3_CONNECTION_TTL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: EXPORT_S3_CONNECTION_TTL_MS
             {{- if or .Values.s3Credentials.existingSecret .Values.externalSecrets.s3.enabled }}
             - name: EXPORT_S3_ACCESS_KEY
               valueFrom:
@@ -178,6 +208,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "audit-service.fullname" . }}-clickhouse
                   key: password
+            - name: CLICKHOUSE_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: CLICKHOUSE_DATABASE
             - name: KEYCLOAK_ISSUER_URI
               valueFrom:
                 secretKeyRef:
