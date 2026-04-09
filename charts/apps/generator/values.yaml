@@ -61,8 +61,8 @@ securityContext:
 generator:
   # Server configuration
   server:
-    # Tinode WebSocket endpoint (matches tinode_new chart service ports)
-    url: "wss://tinode.tinode.svc.cluster.local:16060/v0/channels"
+    # Tinode WebSocket endpoint (use ws:// for non-TLS, wss:// requires valid certificates)
+    url: "ws://tinode.tinode.svc.cluster.local:16060/v0/channels"
     # REST API endpoint for user provisioning (HTTP, not HTTPS - Tinode serves HTTP)
     apiEndpoint: "http://tinode.tinode.svc.cluster.local:6060"
     # Connection timeout in seconds

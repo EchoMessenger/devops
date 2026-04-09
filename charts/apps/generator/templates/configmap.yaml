@@ -114,7 +114,7 @@ data:
       normal:
         enabled: true
         description: {{ .Values.generator.scenarios.normal.description | quote }}
-        users:
+        user_ids:
         {{- range .Values.generator.scenarios.normal.users }}
           - {{ . | quote }}
         {{- end }}
