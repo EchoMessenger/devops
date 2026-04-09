@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "generator.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "generator.labels" . | nindent 4 }}
+data:
+  generator-config.yaml: |
+    # Tinode Server Configuration
+    server:
+      url: {{ .Values.generator.server.url | quote }}
+      api_endpoint: {{ .Values.generator.server.apiEndpoint | quote }}
+      timeout_seconds: {{ .Values.generator.server.timeoutSeconds }}
+
+    # Generator Settings
+    generator:
+      max_concurrency: {{ .Values.generator.settings.maxConcurrency }}
+      rate_limit_per_second: {{ .Values.generator.settings.rateLimitPerSecond }}
+      dry_run: {{ .Values.generator.settings.dryRun }}
+      log_level: {{ .Values.generator.settings.logLevel | quote }}
+      log_output: stdout
+      log_file: ""
+      events_log_file: {{ .Values.env.EVENTS_LOG_FILE | quote }}
+      metrics_addr: {{ .Values.env.METRICS_ADDR | quote }}
+      selected_scenarios: {{ .Values.generator.settings.selectedScenarios | quote }}
+
+    # User Definitions (auto-provisioned on startup)
+    users:
+    {{- range .Values.generator.users }}
+      - id: {{ .id | quote }}
+        login: {{ .login | quote }}
+        password: {{ .password | quote }}
+        description: {{ .description | quote }}
+    {{- end }}
+
+    # Topic Definitions (auto-created on startup)
+    topics:
+    {{- range .Values.generator.topics }}
+      - name: {{ .name | quote }}
+        type: {{ .type | quote }}
+        description: {{ .description | quote }}
+        default_access_auth: {{ .defaultAccessAuth | quote }}
+        default_access_anon: {{ .defaultAccessAnon | quote }}
+    {{- end }}
+
+    # Scenario Configurations
+    scenarios:
+    {{- if .Values.generator.scenarios.brute_force.enabled }}
+      brute_force:
+        enabled: true
+        description: {{ .Values.generator.scenarios.brute_force.description | quote }}
+        user_id: {{ .Values.generator.scenarios.brute_force.userId | quote }}
+        target_login: {{ .Values.generator.scenarios.brute_force.targetLogin | quote }}
+        min_attempts: {{ .Values.generator.scenarios.brute_force.minAttempts }}
+        interval_ms: {{ .Values.generator.scenarios.brute_force.intervalMs }}
+        timeout_seconds: {{ .Values.generator.scenarios.brute_force.timeoutSeconds }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.concurrent_sessions.enabled }}
+      concurrent_sessions:
+        enabled: true
+        description: {{ .Values.generator.scenarios.concurrent_sessions.description | quote }}
+        user_id: {{ .Values.generator.scenarios.concurrent_sessions.userId | quote }}
+        session_count: {{ .Values.generator.scenarios.concurrent_sessions.sessionCount }}
+        connection_interval_ms: {{ .Values.generator.scenarios.concurrent_sessions.connectionIntervalMs }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.mass_delete.enabled }}
+      mass_delete:
+        enabled: true
+        description: {{ .Values.generator.scenarios.mass_delete.description | quote }}
+        user_id: {{ .Values.generator.scenarios.mass_delete.userId | quote }}
+        topic: {{ .Values.generator.scenarios.mass_delete.topic | quote }}
+        delete_burst_count: {{ .Values.generator.scenarios.mass_delete.deleteBurstCount }}
+        delete_interval_ms: {{ .Values.generator.scenarios.mass_delete.deleteIntervalMs }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.volume_anomaly.enabled }}
+      volume_anomaly:
+        enabled: true
+        description: {{ .Values.generator.scenarios.volume_anomaly.description | quote }}
+        user_id: {{ .Values.generator.scenarios.volume_anomaly.userId | quote }}
+        messages_per_minute: {{ .Values.generator.scenarios.volume_anomaly.messagesPerMinute }}
+        duration_seconds: {{ .Values.generator.scenarios.volume_anomaly.durationSeconds }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.enumeration.enabled }}
+      enumeration:
+        enabled: true
+        description: {{ .Values.generator.scenarios.enumeration.description | quote }}
+        user_id: {{ .Values.generator.scenarios.enumeration.userId | quote }}
+        topic_ids:
+        {{- range .Values.generator.scenarios.enumeration.topicIds }}
+          - {{ . | quote }}
+        {{- end }}
+        subscription_interval_ms: {{ .Values.generator.scenarios.enumeration.subscriptionIntervalMs }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.inactive_account.enabled }}
+      inactive_account:
+        enabled: true
+        description: {{ .Values.generator.scenarios.inactive_account.description | quote }}
+        user_id: {{ .Values.generator.scenarios.inactive_account.userId | quote }}
+        message_burst_count: {{ .Values.generator.scenarios.inactive_account.messageBurstCount }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.off_hours.enabled }}
+      off_hours:
+        enabled: true
+        description: {{ .Values.generator.scenarios.off_hours.description | quote }}
+        user_id: {{ .Values.generator.scenarios.off_hours.userId | quote }}
+        messages_per_minute: {{ .Values.generator.scenarios.off_hours.messagesPerMinute }}
+        business_hours_start: {{ .Values.generator.scenarios.off_hours.businessHoursStart | quote }}
+        business_hours_end: {{ .Values.generator.scenarios.off_hours.businessHoursEnd | quote }}
+        duration_seconds: {{ .Values.generator.scenarios.off_hours.durationSeconds }}
+    {{- end }}
+    {{- if .Values.generator.scenarios.normal.enabled }}
+      normal:
+        enabled: true
+        description: {{ .Values.generator.scenarios.normal.description | quote }}
+        users:
+        {{- range .Values.generator.scenarios.normal.users }}
+          - {{ . | quote }}
+        {{- end }}
+        duration_seconds: {{ .Values.generator.scenarios.normal.durationSeconds }}
+        messages_per_minute: {{ .Values.generator.scenarios.normal.messagesPerMinute }}
+    {{- end }}

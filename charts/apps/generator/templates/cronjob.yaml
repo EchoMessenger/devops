@@ -1,0 +1,118 @@
+{{- if .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "generator.fullname" . }}-scheduled
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "generator.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "generator.selectorLabels" . | nindent 8 }}
+    spec:
+      backoffLimit: {{ .Values.job.backoffLimit }}
+      ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          annotations:
+            {{- with .Values.podAnnotations }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+          labels:
+            {{- include "generator.selectorLabels" . | nindent 12 }}
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "generator.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          restartPolicy: {{ .Values.restartPolicy }}
+
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "generator.fullname" . }}-config
+                defaultMode: 0444
+            {{- if .Values.volumes.tmpDir.enabled }}
+            - name: tmp
+              emptyDir:
+                sizeLimit: {{ .Values.volumes.tmpDir.sizeLimit }}
+            {{- end }}
+
+          containers:
+            - name: {{ .Chart.Name }}
+              securityContext:
+                {{- toYaml .Values.securityContext | nindent 16 }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+              ports:
+                - name: metrics
+                  containerPort: 8080
+                  protocol: TCP
+
+              env:
+                - name: LOG_LEVEL
+                  value: {{ .Values.env.LOG_LEVEL | quote }}
+                - name: METRICS_ADDR
+                  value: {{ .Values.env.METRICS_ADDR | quote }}
+                - name: EVENTS_LOG_FILE
+                  value: {{ .Values.env.EVENTS_LOG_FILE | quote }}
+                {{- if .Values.externalSecrets.enabled }}
+                - name: TINODE_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "generator.fullname" . }}-tinode
+                      key: api-key
+                {{- end }}
+
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/generator
+                  readOnly: true
+                {{- if .Values.volumes.tmpDir.enabled }}
+                - name: tmp
+                  mountPath: /tmp
+                {{- end }}
+
+              args:
+                - "-config"
+                - "/etc/generator/generator-config.yaml"
+                - "-log-level"
+                - "{{ .Values.env.LOG_LEVEL }}"
+                - "-metrics"
+                - "{{ .Values.env.METRICS_ADDR }}"
+                - "-events-log"
+                - "{{ .Values.env.EVENTS_LOG_FILE }}"
+                {{- if .Values.generator.settings.selectedScenarios }}
+                - "-scenarios"
+                - "{{ .Values.generator.settings.selectedScenarios }}"
+                {{- end }}
+                {{- if .Values.generator.settings.dryRun }}
+                - "-dry-run"
+                {{- end }}
+
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
