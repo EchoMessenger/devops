@@ -10,6 +10,7 @@ data:
     # Tinode Server Configuration
     server:
       url: {{ .Values.generator.server.url | quote }}
+      api_key: "" # Will be overridden by TINODE_API_KEY environment variable if set
       api_endpoint: {{ .Values.generator.server.apiEndpoint | quote }}
       timeout_seconds: {{ .Values.generator.server.timeoutSeconds }}
 
