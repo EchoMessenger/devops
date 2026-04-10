@@ -112,7 +112,7 @@ generator:
       enabled: true
       description: "Multiple failed logins to trigger brute force detection"
       userId: attacker
-      targetLogin: victim_user
+      targetLogin: bob
       minAttempts: 10
       intervalMs: 500
       timeoutSeconds: 60
