@@ -25,6 +25,7 @@ data:
       events_log_file: {{ .Values.env.EVENTS_LOG_FILE | quote }}
       metrics_addr: {{ .Values.env.METRICS_ADDR | quote }}
       selected_scenarios: {{ .Values.generator.settings.selectedScenarios | quote }}
+      skip_provisioning: true  # Skip account creation - use pre-existing Tinode accounts
 
     # User Definitions (auto-provisioned on startup)
     users:
