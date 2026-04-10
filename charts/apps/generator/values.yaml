@@ -81,20 +81,21 @@ generator:
     # Selected scenarios: "all" or comma-separated (e.g., "brute_force,volume_anomaly")
     selectedScenarios: "all"
 
-  # Test users to be provisioned
+  # Test users - MUST match pre-existing Tinode accounts when skip_provisioning=true
+  # Available Tinode demo accounts: alice123, bob123, carol123, dave123, eve123, frank123, tino123, xena123
   users:
     - id: attacker
-      login: attacker_user
-      password: "GeneratorAttacker123!@#"
-      description: "Attacker account for security testing"
+      login: alice
+      password: "alice123"
+      description: "Attacker account (maps to alice demo user)"
     - id: victim
-      login: victim_user
-      password: "GeneratorVictim456!@#"
-      description: "Victim account for testing"
+      login: bob
+      password: "bob123"
+      description: "Victim account (maps to bob demo user)"
     - id: normal_user1
-      login: normal_user_1
-      password: "GeneratorNormal001!@#"
-      description: "Normal user for baseline traffic"
+      login: carol
+      password: "carol123"
+      description: "Normal user for baseline traffic (maps to carol demo user)"
 
   # Test topics to be created
   topics:
