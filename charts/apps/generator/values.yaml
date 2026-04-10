@@ -70,7 +70,7 @@ generator:
     # Keycloak configuration for JWT authentication
     keycloakUrl: "http://keycloak.keycloak.svc.cluster.local:80"
     keycloakRealm: "echo"
-    keycloakClient: "tinode-client"
+    keycloakClient: "webapp"
 
   # Generator settings
   settings:
