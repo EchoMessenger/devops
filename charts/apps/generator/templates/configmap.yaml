@@ -13,6 +13,9 @@ data:
       api_key: "" # Will be overridden by TINODE_API_KEY environment variable if set
       api_endpoint: {{ .Values.generator.server.apiEndpoint | quote }}
       timeout_seconds: {{ .Values.generator.server.timeoutSeconds }}
+      keycloak_url: {{ .Values.generator.server.keycloakUrl | quote }}
+      keycloak_realm: {{ .Values.generator.server.keycloakRealm | quote }}
+      keycloak_client: {{ .Values.generator.server.keycloakClient | quote }}
 
     # Generator Settings
     generator:

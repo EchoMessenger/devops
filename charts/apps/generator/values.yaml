@@ -67,6 +67,10 @@ generator:
     apiEndpoint: "http://tinode.tinode.svc.cluster.local:6060"
     # Connection timeout in seconds
     timeoutSeconds: 30
+    # Keycloak configuration for JWT authentication
+    keycloakUrl: "http://keycloak.keycloak.svc.cluster.local:8080"
+    keycloakRealm: "echo"
+    keycloakClient: "tinode-client"
 
   # Generator settings
   settings:
