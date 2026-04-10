@@ -68,9 +68,11 @@ generator:
     # Connection timeout in seconds
     timeoutSeconds: 30
     # Keycloak configuration for JWT authentication
-    keycloakUrl: "http://keycloak.keycloak.svc.cluster.local:80"
+    # CRITICAL: Must match the URL that Keycloak uses as the issuer (iss claim)
+    # and what restauth validates
+    keycloakUrl: "https://auth.echo-messenger.ru"
     keycloakRealm: "echo"
-    keycloakClient: "webapp"
+    keycloakClient: "generator"
 
   # Generator settings
   settings:
