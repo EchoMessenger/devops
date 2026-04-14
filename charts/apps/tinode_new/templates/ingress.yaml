@@ -5,10 +5,11 @@ metadata:
   name: {{ include "tinode.fullname" . }}
   labels:
     {{- include "tinode.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "tinode.fullname" . }}-websocket@kubernetescrd
+    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
