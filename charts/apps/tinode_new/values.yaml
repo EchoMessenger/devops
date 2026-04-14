@@ -57,8 +57,6 @@ ingress:
   annotations:
     # WebSocket поддержка для Traefik: keep connection alive для долгоживущих WebSocket соединений
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    # Отключить буферизацию для WebSocket
-    traefik.ingress.kubernetes.io/router.middlewares: "gzip@kubernetescrd"
   hosts:
     - host: tinode.echo-messenger.ru
       paths:
