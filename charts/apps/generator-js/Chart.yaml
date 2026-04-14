@@ -1,0 +1,28 @@
+apiVersion: v2
+name: generator-js
+description: Node.js Event Generator for EchoMessenger Audit Service Testing
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - event-generator
+  - audit
+  - incident-detection
+  - testing
+  - tinode
+
+home: https://github.com/echomessenger/echomessenger
+sources:
+  - https://github.com/echomessenger/echomessenger/tree/main/generator
+  - https://github.com/echomessenger/echomessenger/tree/main/devops/charts/apps/generator-js
+
+maintainers:
+  - name: Copilot
+    email: copilot@github.com
+
+dependencies: []
+
+annotations:
+  category: Testing
+  licenses: Apache-2.0
