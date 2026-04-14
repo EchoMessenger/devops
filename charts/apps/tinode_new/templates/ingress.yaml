@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "tinode.labels" . | nindent 4 }}
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ include "tinode.fullname" . }}-websocket@kubernetescrd
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
