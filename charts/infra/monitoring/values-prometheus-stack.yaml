@@ -102,11 +102,11 @@ grafana:
       traefik.ingress.kubernetes.io/router.tls: "true"
       cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
-      - www.grafana.echo-messenger.ru
+      - grafana.echo-messenger.ru
     tls:
       - secretName: grafana-tls
         hosts:
-          - www.grafana.echo-messenger.ru
+          - grafana.echo-messenger.ru
 
 # Node exporter для метрик хоста
 nodeExporter:

@@ -1,68 +1,183 @@
-# Установка
+# Monitoring stack (k3s): Prometheus + Grafana + Loki + Promtail
+
+Инструкция проверена на текущем окружении EchoMessenger и включает рабочий пайплайн OpenBao audit logs:
+
+`OpenBao (/vault/audit/audit.log) -> Promtail (file scrape) -> Loki -> Grafana`
+
+## Предусловия
+
+1. OpenBao развернут из `devops/charts/infra/openbao-core` с hostPath для audit-логов:
+   - в pod: `/vault/audit/audit.log`
+   - на ноде: `/var/log/openbao/audit.log`
+2. В `devops/charts/infra/monitoring/values-promtail.yaml` уже есть:
+   - `extraVolumes/extraVolumeMounts` на `/var/log/openbao`
+   - `extraScrapeConfigs` с `job_name: openbao-audit`
+
+## Установка / обновление стека
+
+Выполнять из корня репозитория:
 
 ```sh
-#!/bin/bash
-set -euo pipefail
+cd /Users/nikitadyuckov/Documents/GitHub/EchoMessenger
 
-echo "=== 1. Создание namespace ==="
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 
-echo "=== 2. Добавление Helm-репозиториев ==="
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
+```
 
-echo "=== 3. Prometheus Stack ==="
+### 1) Prometheus + Grafana
+
+```sh
 helm upgrade --install kube-prometheus-stack \
   prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
-  -f monitoring/values-prometheus-stack.yaml \
+  -n monitoring \
+  -f devops/charts/infra/monitoring/values-prometheus-stack.yaml \
   --wait --timeout 10m
+```
 
-echo "=== 4. Loki ==="
+### 2) Loki (важно для chart 6.55.0+)
+
+Для Loki в этом chart нужно явно задавать:
+- `deploymentMode=SingleBinary` (top-level)
+- `schemaConfig`
+- `compactor.delete_request_store` при включенном retention
+
+```sh
 helm upgrade --install loki grafana/loki \
-  --namespace monitoring \
-  -f values-loki.yaml \
+  -n monitoring \
+  -f devops/charts/infra/monitoring/values-loki.yaml \
+  --reset-values \
+  --set deploymentMode=SingleBinary \
+  --set loki.schemaConfig.configs[0].from=2024-01-01 \
+  --set loki.schemaConfig.configs[0].store=tsdb \
+  --set loki.schemaConfig.configs[0].object_store=filesystem \
+  --set loki.schemaConfig.configs[0].schema=v13 \
+  --set loki.schemaConfig.configs[0].index.prefix=loki_index_ \
+  --set loki.schemaConfig.configs[0].index.period=24h \
+  --set loki.compactor.retention_enabled=true \
+  --set loki.compactor.delete_request_store=filesystem \
   --wait --timeout 10m
+```
 
-echo "=== 5. Promtail ==="
+### 3) Promtail
+
+```sh
 helm upgrade --install promtail grafana/promtail \
-  --namespace monitoring \
-  -f monitoring/values-promtail.yaml \
-  --wait
-
-# echo "=== 6. Tempo ==="
-# helm upgrade --install tempo grafana/tempo \
-#   --namespace monitoring \
-#   -f values-tempo.yaml \
-#   --wait
-
-echo "=== 7. Exporters и мониторы ==="
-kubectl apply -f monitoring/postgres-exporter.yaml
-kubectl apply -f monitoring/cert-manager-monitor.yaml
-kubectl apply -f monitoring/traefik-monitor.yaml
-kubectl apply -f monitoring/custom-alerts.yaml
-
-echo "=== Готово! ==="
-echo "Grafana: kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80"
+  -n monitoring \
+  -f devops/charts/infra/monitoring/values-promtail.yaml \
+  --wait --timeout 10m
 ```
 
-# Использование
-
-Port-forward:
+### 4) Дополнительные ServiceMonitor/Rules
 
 ```sh
-# На сервере
-export POD_NAME=$(kubectl --namespace monitoring get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=kube-prometheus-stack" -oname)
-kubectl --namespace monitoring port-forward $POD_NAME 3000
-# Локально
-ssh -L 3000:127.0.0.1:3000 nikita@www.echo-messenger.ru
+kubectl apply -f devops/charts/infra/monitoring/postgres-exporter.yaml
+kubectl apply -f devops/charts/infra/monitoring/cert-manager-monitor.yaml
+kubectl apply -f devops/charts/infra/monitoring/traefik-monitor.yaml
+kubectl apply -f devops/charts/infra/monitoring/custom-alerts.yaml
 ```
 
-Получаем пароль на сервере:
+## Быстрая проверка пайплайна OpenBao -> Loki
+
+### 1) Проверить файл в Promtail pod
 
 ```sh
-kubectl --namespace monitoring get secrets kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+POD=$(kubectl -n monitoring get pods -l app.kubernetes.io/name=promtail -o jsonpath='{.items[0].metadata.name}')
+kubectl -n monitoring exec "$POD" -- sh -c 'ls -la /var/log/openbao'
+kubectl -n monitoring exec "$POD" -- sh -c 'grep -n "job_name: openbao-audit" /etc/promtail/promtail.yaml'
 ```
 
-Заходим на `localhost:3000` вводим `admin` и пароль
+### 2) Сгенерировать audit-событие в OpenBao
+
+```sh
+ROOT_TOKEN=$(kubectl -n openbao get secret openbao-bootstrap -o jsonpath='{.data.root-token}' | base64 -d)
+kubectl -n openbao exec sts/openbao -- sh -c \
+'curl -s -H "X-Vault-Token: '"$ROOT_TOKEN"'" http://127.0.0.1:8200/v1/auth/token/lookup-self >/dev/null && echo ok'
+```
+
+### 3) Проверить данные в Loki
+
+```sh
+kubectl -n monitoring port-forward svc/loki-gateway 3100:80
+```
+
+Во втором терминале:
+
+```sh
+curl -G 'http://127.0.0.1:3100/loki/api/v1/query_range' \
+  --data-urlencode 'query={job="openbao-audit",service="openbao"}' \
+  --data-urlencode 'limit=50' \
+  --data-urlencode "start=$(date -u -d '15 minutes ago' +%s)000000000" \
+  --data-urlencode "end=$(date -u +%s)000000000"
+```
+
+## Grafana доступ
+
+```sh
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+```
+
+Логин: `admin`, пароль из команды выше.
+
+## Рекомендуемые панели для OpenBao audit
+
+Datasource: `Loki`
+
+1. Time series (events/min):
+```logql
+sum(count_over_time({job="openbao-audit",service="openbao"}[1m]))
+```
+
+2. Top users (Table/Bar gauge):
+```logql
+topk(
+  5,
+  sum by (user) (
+    count_over_time(
+      {job="openbao-audit",service="openbao"}
+      | json user="auth.display_name"
+      | user!=""
+      [5m]
+    )
+  )
+)
+```
+
+3. Errors (Logs):
+```logql
+{job="openbao-audit",service="openbao"} |~ "(?i)error|denied|forbidden|permission"
+```
+
+4. Raw logs (Logs):
+```logql
+{job="openbao-audit",service="openbao"}
+```
+
+## Troubleshooting
+
+### `502 Bad Gateway` на `loki-gateway`
+
+Проверить gateway logs:
+
+```sh
+kubectl -n monitoring logs deploy/loki-gateway --tail=200
+```
+
+Если есть `loki-distributor... could not be resolved` или `loki-query-frontend... could not be resolved`:
+- применился неправильный Loki mode (обычно не SingleBinary);
+- повторить `helm upgrade` Loki с `--reset-values` и `--set deploymentMode=SingleBinary`.
+
+### `invalid compactor config: compactor.delete-request-store should be configured`
+
+Добавить:
+
+```sh
+--set loki.compactor.delete_request_store=filesystem
+```
+
+### В `query` видите `log queries are not supported as an instant query type`
+
+Это нормально для логовых stream-запросов. Используйте `query_range`.
