@@ -24,6 +24,41 @@ config:
                 expression: '^(?P<timestamp>\S+)\s+(?P<level>\w+)\s+(?P<message>.+)$'
             - labels:
                 level:
+    extraScrapeConfigs: |
+      - job_name: openbao-audit
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: openbao-audit
+              service: openbao
+              __path__: /var/log/openbao/audit.log
+        pipeline_stages:
+          - json:
+              expressions:
+                time: time
+                type: type
+                operation: request.operation
+                path: request.path
+                user: auth.display_name
+                remote_ip: request.remote_address
+          - labels:
+              type:
+              operation:
+          - timestamp:
+              source: time
+              format: RFC3339Nano
+
+extraVolumes:
+  - name: openbao-audit
+    hostPath:
+      path: /var/log/openbao
+      type: DirectoryOrCreate
+
+extraVolumeMounts:
+  - name: openbao-audit
+    mountPath: /var/log/openbao
+    readOnly: true
 
 resources:
   requests:

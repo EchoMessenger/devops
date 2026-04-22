@@ -14,6 +14,8 @@ fullnameOverride: ""
 tinodeServer:
   host: tinode.tinode.svc.cluster.local
   port: 6060
+  # For local development: localhost
+  # For production with Ingress: tinode.echo-messenger.ru
 
 keycloak:
   url: "https://auth.echo-messenger.ru"

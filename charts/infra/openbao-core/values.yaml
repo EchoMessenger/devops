@@ -109,13 +109,28 @@ config:
     type: file
 
     # -- Path to audit log file inside the pod
-    path: /openbao/data/audit/audit.log
-
+    path: /vault/audit/audit.log
 
   # @section Demo data
 
   # -- Create a demo secret for testing purposes
   createDemoSecret: false
+
+
+# @section Audit log hostPath mount
+
+auditLogHostPath:
+  # -- Mount hostPath into OpenBao pod for audit file persistence
+  enabled: true
+
+  # -- Host path on Kubernetes node for audit logs
+  path: /var/log/openbao
+
+  # -- Directory path inside OpenBao pod where hostPath is mounted
+  mountPath: /vault/audit
+
+  # -- hostPath volume type
+  type: DirectoryOrCreate
 
 
 # @section Kubernetes auth

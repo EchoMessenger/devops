@@ -27,6 +27,12 @@ spec:
           env:
             - name: BAO_ADDR
               value: {{ quote .Values.openbao.server }}
+            - name: AUDIT_ENABLED
+              value: {{ quote .Values.config.audit.enabled }}
+            - name: AUDIT_TYPE
+              value: {{ quote .Values.config.audit.type }}
+            - name: AUDIT_PATH
+              value: {{ quote .Values.config.audit.path }}
           args:
             - |
               set -e
@@ -165,24 +171,34 @@ spec:
               echo ""
               echo "=== Configuring Audit Logging ==="
 
-              AUDITS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/audit)
-
-              if echo "$AUDITS" | jq -e '.["file/"]' >/dev/null 2>&1; then
-                echo "Audit logging already enabled"
+              if [ "$AUDIT_ENABLED" != "true" ]; then
+                echo "Audit logging disabled via values"
               else
-                echo "Enabling file audit device..."
-                # Note: This may fail if /vault/audit doesn't exist - that's OK
-                RESULT=$(curl -s -X PUT \
-                  -H "X-Vault-Token: $ROOT_TOKEN" \
-                  -H "Content-Type: application/json" \
-                  -d '{"type":"file","options":{"file_path":"/vault/audit/audit.log"}}' \
-                  $BAO_ADDR/v1/sys/audit/file)
-
-                if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
-                  echo "Warning: Could not enable file audit (path may not exist)"
-                  echo "This is OK - audit can be configured later"
+                if [ "$AUDIT_TYPE" != "file" ]; then
+                  echo "ERROR: Unsupported audit backend type: $AUDIT_TYPE"
+                  exit 1
                 else
-                  echo "File audit logging enabled"
+                  AUDITS=$(curl -s -H "X-Vault-Token: $ROOT_TOKEN" $BAO_ADDR/v1/sys/audit)
+                  AUDIT_KEY="${AUDIT_TYPE}/"
+
+                  if echo "$AUDITS" | jq -e --arg key "$AUDIT_KEY" '.[$key]' >/dev/null 2>&1; then
+                    echo "Audit logging already enabled"
+                  else
+                    echo "Enabling $AUDIT_TYPE audit device at $AUDIT_PATH..."
+                    AUDIT_PAYLOAD=$(jq -n --arg type "$AUDIT_TYPE" --arg filePath "$AUDIT_PATH" '{type: $type, options: {file_path: $filePath}}')
+                    RESULT=$(curl -s -X PUT \
+                      -H "X-Vault-Token: $ROOT_TOKEN" \
+                      -H "Content-Type: application/json" \
+                      -d "$AUDIT_PAYLOAD" \
+                      $BAO_ADDR/v1/sys/audit/$AUDIT_TYPE)
+
+                    if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
+                      echo "Warning: Could not enable file audit (path may not exist)"
+                      echo "This is OK - audit can be configured later"
+                    else
+                      echo "File audit logging enabled"
+                    fi
+                  fi
                 fi
               fi
 
