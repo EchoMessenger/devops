@@ -1,0 +1,85 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/minio/minio
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  apiPort: 9000
+  consolePort: 9001
+
+storage:
+  size: 20Gi
+  storageClassName: local-path
+
+minio:
+  rootUser: admin
+  # If empty, password is generated once and then reused from the existing Secret on upgrades.
+  # Can be set explicitly for manual override.
+  rootPassword: ""
+  dataPath: /data
+  region: us-east-1
+  bucket:
+    create: true
+    name: tinode-minio
+  cors:
+    enabled: true
+    allowedOrigins:
+      - https://tinode.echo-messenger.ru
+      - http://tinode.echo-messenger.ru
+    allowedMethods:
+      - GET
+      - HEAD
+      - PUT
+      - POST
+    allowedHeaders:
+      - "*"
+    exposeHeaders:
+      - ETag
+      - Content-Disposition
+      - Content-Type
+    maxAgeSeconds: 3600
+
+mcImage:
+  repository: minio/mc
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 150m
+  limits:
+    memory: 1Gi
+    cpu: 1000m
+
+ingress:
+  enabled: false
+  className: traefik
+  servicePort: api
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: minio-tinode.echo-messenger.ru
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: minio-tinode-tls
+      hosts:
+        - minio-tinode.echo-messenger.ru
+
+pushSecret:
+  enabled: true
+  secretStoreName: openbao-global
+  remotePath: tinode/s3
+  useProperty: true
+  refreshInterval: "1h"
+  deletionPolicy: None
+
+nameOverride: ""
+fullnameOverride: ""

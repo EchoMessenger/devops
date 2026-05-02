@@ -143,6 +143,77 @@ persistence:
   enabled: false  # отключаем PVC
 ```
 
+#### S3 с использованием Minio (OpenBao)
+
+Если вы используете OpenBao для управления секретами, создайте отдельный Minio chart для Tinode:
+
+```bash
+# 1. Установите minio-tinode chart (один раз)
+helm install minio-tinode ./devops/charts/infra/minio-tinode \
+  -n tinode-infra --create-namespace
+
+# Это создаст Minio StatefulSet и подключит его через PushSecret к OpenBao
+# Credentials будут синхронизированы в OpenBao по пути tinode/s3
+
+# 2. Деплойте tinode с включенным S3 (точки подключения заполнятся автоматически из OpenBao)
+helm install tinode ./tinode-helm \
+  -f values-s3-minio.yaml \
+  -n tinode --create-namespace
+```
+
+**Пример `values-s3-minio.yaml`** (используется с OpenBao):
+
+```yaml
+# Среда: tinode-infra (где развернут minio-tinode)
+openbao:
+  enabled: true
+  clusterSecretStore: openbao-global
+  secrets:
+    s3:
+      path: tinode/s3  # OpenBao будет получать отсюда credentials
+
+# Включаем S3 как обработчик медиа
+media:
+  handler: "s3"
+  s3:
+    # Значения заполнятся автоматически из ExternalSecret (из OpenBao)
+    # которые в свою очередь поступают из minio-tinode chart PushSecret
+    region: "us-east-1"
+    bucket: "tinode-minio"
+    # Endpoint вычисляется автоматически: http://minio-tinode.tinode-infra.svc.cluster.local:9000
+    endpoint: ""
+    corsOrigins: '["https://tinode.echo-messenger.ru"]'
+
+# Отключаем локальное хранилище (используем S3)
+persistence:
+  enabled: false
+
+# Используем OpenBao для получения S3 credentials
+encryption:
+  apiKeySalt: ""  # будет заполнено из OpenBao
+  authTokenKey: ""
+  uidEncryptionKey: ""
+```
+
+**Архитектура потока**:
+```
+minio-tinode StatefulSet (ns: tinode-infra)
+    ↓
+    Secret: minio-tinode-credentials
+    ↓
+    PushSecret (синхронизирует в OpenBao)
+    ↓
+    OpenBao: tinode/s3 (accessKey, secretKey, endpoint, region, bucket)
+    ↓
+    Tinode ExternalSecret (читает из OpenBao)
+    ↓
+    Tinode Secret: aws-access-key-id, aws-secret-access-key
+    ↓
+    Tinode Deployment (инжектирует AWS_* переменные)
+    ↓
+    Tinode app (подключается к Minio как к S3 хранилищу)
+```
+
 ### Email верификация
 
 ```yaml
