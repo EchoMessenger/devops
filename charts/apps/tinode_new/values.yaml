@@ -95,7 +95,7 @@ encryption:
 
 # Конфигурация хранилища медиа
 media:
-  handler: "fs"  # fs или s3
+  handler: "s3"  # fs или s3
   maxSize: 33554432  # 32MB
   
   # Настройки файловой системы
