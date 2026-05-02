@@ -60,6 +60,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "webapp.fullname" . }}
                   key: api-key
+            - name: TINODE_HOST
+              value: {{ printf "tinode.%s.svc.cluster.local" .Release.Namespace | quote }}
             - name: DEFAULT_HOST
               value: ""
             - name: KEYCLOAK_URL

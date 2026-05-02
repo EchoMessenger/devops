@@ -1,0 +1,16 @@
+apiVersion: v2
+name: generator
+description: Generator Service for EchoMessenger — Test scenario runner for audit system incident detection (R1-R7 malicious behaviors)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - generator
+  - test
+  - scenarios
+  - security
+  - audit
+
+maintainers:
+  - name: echomessenger-platform

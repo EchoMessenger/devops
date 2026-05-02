@@ -1,6 +1,8 @@
-# Devops
+# DevOps
 
-Источник правды (Source of truth) для развёртывания приложений
+Источник правды (Source of truth) для развёртывания приложений EchoMessenger.
+
+**📚 Полная документация находится в:** [`docs/devops/`](../docs/devops/README.md)
 
 ## OpenBao
 > Хранилище секретов

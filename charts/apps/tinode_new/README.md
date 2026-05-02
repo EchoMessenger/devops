@@ -352,6 +352,61 @@ kubectl describe certificate tinode-tls
 
 Следует лицензии основного проекта Tinode.
 
+## WebSocket и разработка на удаленной машине
+
+### Включение WebSocket в Ingress
+
+WebSocket поддержка уже включена в конфигурации Ingress (см. `templates/ingress.yaml`).
+
+Traefik автоматически поддерживает WebSocket и долгоживущие соединения благодаря аннотациям:
+```yaml
+annotations:
+  traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  traefik.ingress.kubernetes.io/router.middlewares: "gzip@kubernetescrd"
+```
+
+### Локальная разработка webapp с удаленным Tinode
+
+Если вы разрабатываете webapp локально и хотите подключиться к Tinode на VPS:
+
+1. **Убедитесь, что DNS сконфигурирован**: `tinode.echo-messenger.ru` должен указывать на IP вашего VPS
+2. **Запустите webapp локально** (например, на `localhost:3000`)
+3. **Установите переменную окружения** `TINODE_HOST=tinode.echo-messenger.ru`
+4. **Запустите webapp контейнер**:
+
+```bash
+export TINODE_HOST="tinode.echo-messenger.ru"
+docker run -p 8080:80 \
+  -e API_KEY="your-api-key" \
+  -e TINODE_HOST="${TINODE_HOST}" \
+  my-webapp:latest
+```
+
+Webapp автоматически подключится к удаленному Tinode через WebSocket.
+
+### Отладка WebSocket
+
+Если WebSocket соединение не работает:
+
+```bash
+# 1. Проверьте, что Ingress запущен и конфигурирован
+kubectl get ingress tinode
+
+# 2. Проверьте сервис
+kubectl get svc tinode
+
+# 3. Посмотрите логи Traefik
+kubectl logs -n kube-system -l app.kubernetes.io/name=traefik | grep -i websocket
+
+# 4. Проверьте доступность из вашей машины
+curl -i http://tinode.echo-messenger.ru/
+```
+
+В браузере откройте DevTools → Network tab и проверьте:
+- Найдите WebSocket соединение к `tinode.echo-messenger.ru`
+- Status должен быть `101 Switching Protocols`
+- Если это TLS, используется `wss://`, если нет - `ws://`
+
 ## Поддержка
 
 - [Tinode Documentation](https://github.com/tinode/chat)

@@ -1,0 +1,149 @@
+{{- if .Values.job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "generator-js.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "generator-js.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.job.hook.enabled }}
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "{{ .Values.job.hook.weight }}"
+    "helm.sh/hook-delete-policy": {{ .Values.job.hook.deletePolicy }}
+    {{- end }}
+spec:
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "generator-js.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "generator-js.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          args:
+            - --scenarios={{ .Values.args.scenarios }}
+            - --log-level={{ .Values.args.logLevel }}
+            {{- if .Values.args.dryRun }}
+            - --dry-run
+            {{- end }}
+          
+          env:
+            - name: TINODE_HOST
+              value: {{ .Values.generator.server.host | quote }}
+            - name: TINODE_PORT
+              value: {{ .Values.generator.server.port | quote }}
+            - name: TINODE_SECURE
+              value: {{ .Values.generator.server.secure | quote }}
+            - name: TINODE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: generator-secrets
+                  key: TINODE_API_KEY
+            
+            - name: KEYCLOAK_ENABLED
+              value: {{ .Values.generator.server.keycloak.enabled | quote }}
+            - name: KEYCLOAK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: generator-secrets
+                  key: KEYCLOAK_URL
+                  optional: true
+            - name: KEYCLOAK_REALM
+              valueFrom:
+                secretKeyRef:
+                  name: generator-secrets
+                  key: KEYCLOAK_REALM
+                  optional: true
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ .Values.generator.server.keycloak.clientId | quote }}
+            
+            - name: RATE_LIMIT_MS
+              value: {{ .Values.generator.settings.rateLimitMs | quote }}
+            - name: MAX_CONCURRENT
+              value: {{ .Values.generator.settings.maxConcurrent | quote }}
+            - name: TIMEOUT_SECONDS
+              value: {{ .Values.generator.server.timeoutSeconds | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.generator.settings.logLevel | quote }}
+            
+            - name: LOG_FILE
+              value: {{ .Values.env.LOG_FILE | quote }}
+            - name: EVENTS_FILE
+              value: {{ .Values.env.EVENTS_FILE | quote }}
+            
+            {{- range $key, $value := .Values.env }}
+            {{- if and (ne $key "LOG_FILE") (ne $key "EVENTS_FILE") (ne $key "LOG_LEVEL") }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log/generator
+            - name: data
+              mountPath: /var/data/generator
+            - name: tmp
+              mountPath: /tmp
+      
+      restartPolicy: {{ .Values.restartPolicy }}
+      
+      volumes:
+        - name: logs
+          {{- if .Values.volumes.logs.enabled }}
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.logs.size }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: data
+          {{- if .Values.volumes.data.enabled }}
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.data.size }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

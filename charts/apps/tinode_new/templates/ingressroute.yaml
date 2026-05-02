@@ -1,0 +1,26 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "tinode.fullname" . }}-ws
+  labels:
+    {{- include "tinode.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+  - match: Host(`{{ (index .Values.ingress.hosts 0).host }}`) && PathPrefix(`/v0/channels`)
+    kind: Rule
+    services:
+    - name: {{ include "tinode.fullname" . }}
+      port: {{ .Values.service.http.port }}
+    middlewares:
+    - name: {{ include "tinode.fullname" . }}-websocket
+      namespace: {{ .Release.Namespace }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    certResolver: letsencrypt
+  {{- end }}
+{{- end }}
+

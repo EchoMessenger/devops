@@ -1,0 +1,66 @@
+# Development Environment values
+# For local testing with Minikube or local Kubernetes cluster
+
+image:
+  repository: ghcr.io/echomessenger/generator-js
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+job:
+  enabled: true
+  hook:
+    enabled: false  # Don't run as hook in development
+
+cronjob:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+generator:
+  server:
+    host: "tinode.default.svc.cluster.local"  # Adjust for your setup
+    port: 16060
+    keycloak:
+      enabled: false  # Disable for local testing
+      url: "http://keycloak.default.svc.cluster.local:8080"
+
+  settings:
+    rateLimitMs: 200
+    maxConcurrent: 5
+    logLevel: debug
+    dryRun: false
+
+  scenarios:
+    r1_bruteforce:
+      enabled: true
+    r2_concurrent:
+      enabled: true
+    r3_massdel:
+      enabled: true
+    r4_volumeanomaly:
+      enabled: false  # Skip slow scenarios in dev
+    r5_enumeration:
+      enabled: true
+    r6_inactive:
+      enabled: false
+    r7_offhours:
+      enabled: false
+    normal:
+      enabled: true
+
+externalSecrets:
+  enabled: false  # Disable for local testing
+
+env:
+  LOG_LEVEL: "debug"
+
+args:
+  scenarios: "r1-bruteforce,r2-concurrent,normal"
+  logLevel: "debug"
+  dryRun: false

@@ -9,6 +9,10 @@ Single-node OpenBao with automatic initialization and configuration
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | authDelegator.enabled | bool | `true` | Enable ClusterRoleBinding for Kubernetes auth delegation |
+| auditLogHostPath.enabled | bool | `true` | Mount hostPath into OpenBao pod for audit file persistence |
+| auditLogHostPath.mountPath | string | `"/vault/audit"` | Directory path inside OpenBao pod where hostPath is mounted |
+| auditLogHostPath.path | string | `"/var/log/openbao"` | Host path on Kubernetes node for audit logs |
+| auditLogHostPath.type | string | `"DirectoryOrCreate"` | hostPath volume type |
 | config.audit.enabled | bool | `true` | Enable audit logging |
 | config.audit.path | string | `"/vault/audit/audit.log"` | Path to audit log file inside the pod |
 | config.audit.type | string | `"file"` | Audit backend type |

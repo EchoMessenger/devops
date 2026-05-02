@@ -2,14 +2,13 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "tinode.fullname" . }}
+  name: {{ include "bff.fullname" . }}
   labels:
-    {{- include "tinode.labels" . | nindent 4 }}
+    {{- include "bff.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
+  {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -34,9 +33,9 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "tinode.fullname" $ }}
+                name: {{ include "bff.fullname" $ }}
                 port:
-                  number: {{ $.Values.service.http.port }}
+                  number: {{ $.Values.service.port }}
           {{- end }}
     {{- end }}
 {{- end }}

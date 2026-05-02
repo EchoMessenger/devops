@@ -75,6 +75,10 @@ spec:
               mountPath: {{ .Values.storage.path }}
             - name: config
               mountPath: /openbao/config
+            {{- if .Values.auditLogHostPath.enabled }}
+            - name: audit-logs
+              mountPath: {{ .Values.auditLogHostPath.mountPath }}
+            {{- end }}
 
           readinessProbe:
             httpGet:
@@ -101,6 +105,12 @@ spec:
         # RW config dir
         - name: config
           emptyDir: {}
+        {{- if .Values.auditLogHostPath.enabled }}
+        - name: audit-logs
+          hostPath:
+            path: {{ .Values.auditLogHostPath.path }}
+            type: {{ .Values.auditLogHostPath.type }}
+        {{- end }}
 
   volumeClaimTemplates:
     - metadata:

@@ -55,8 +55,8 @@ ingress:
   # Должен совпадать с ingress-контроллером в кластере (в нашем webapp используется traefik).
   className: "traefik"
   annotations:
-    # Минимальный набор для traefik; websocket'ы работают без специальных аннотаций.
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # WebSocket поддержка для Traefik: keep connection alive для долгоживущих WebSocket соединений
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
   hosts:
     - host: tinode.echo-messenger.ru
       paths:

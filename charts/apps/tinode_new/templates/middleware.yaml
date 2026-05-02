@@ -1,0 +1,25 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "tinode.fullname" . }}-websocket
+  labels:
+    {{- include "tinode.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      Connection: "Upgrade"
+      Upgrade: "websocket"
+    customResponseHeaders:
+      Connection: "Upgrade"
+    sslRedirect: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "tinode.fullname" . }}-compress
+  labels:
+    {{- include "tinode.labels" . | nindent 4 }}
+spec:
+  compress: {}
+{{- end }}

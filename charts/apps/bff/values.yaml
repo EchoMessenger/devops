@@ -1,0 +1,131 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/echomessenger/bff
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 7000
+  targetPort: 7000
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: echo-messenger.ru
+      paths:
+        - path: /bff
+          pathType: Prefix
+  tls:
+    - secretName: echo-tls
+      hosts:
+        - echo-messenger.ru
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+env:
+  # Non-sensitive configuration
+  BFF_PORT: "7000"
+  LOG_LEVEL: "info"
+  RATE_LIMIT_PER_MINUTE: "100"
+
+# ExternalSecrets configuration (for service URLs and sensitive data from OpenBao/Vault)
+# In production, ALL service URLs and credentials come from OpenBao
+# This allows changing infrastructure without redeploying the chart
+externalSecrets:
+  enabled: false # Set to true in production, false in development/testing
+  backendType: openbao
+  vaultAddr: "http://openbao-core.default.svc.cluster.local:8200"
+  vaultPath: "secret/data/echomessenger/bff"
+  vaultAuthPath: "auth/kubernetes"
+  vaultRole: "bff"
+  # Secret keys to sync from OpenBao
+  secretKeys:
+    - name: KEYCLOAK_ISSUER_URI
+      key: keycloak_issuer_uri
+    - name: AUDIT_SERVICE_URL
+      key: audit_service_url
+    - name: TASKTRACKER_SERVICE_URL
+      key: tasktracker_service_url
+    - name: RESTAUTH_SERVICE_URL
+      key: restauth_service_url
+
+# Fallback service URLs for development mode (when externalSecrets.enabled=false)
+# Note: These values should match the ones stored in OpenBao for consistency
+fallbackServiceUrls:
+  keycloakIssuerUri: "http://keycloak.default.svc.cluster.local:8080/realms/echo"
+  auditServiceUrl: "http://audit.default.svc.cluster.local:8080"
+  tasktrackerServiceUrl: "http://tasktracker.default.svc.cluster.local:8000"
+  restauthServiceUrl: "http://restauth.default.svc.cluster.local:8000"
+
+# Health check settings
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 7000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 7000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Node affinity (optional)
+affinity: {}
+
+# Tolerations (optional)
+tolerations: []
+
+# Namespace
+namespace: default

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: bff
+description: BFF Service — API Gateway for Frontend microservices (proxy, auth, rate limiting)
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+
+keywords:
+  - bff
+  - api-gateway
+  - go
+  - proxy
+  - rate-limiting
+  - jwt-auth
+
+maintainers:
+  - name: echomessenger-platform
