@@ -1,3 +1,5 @@
+fullnameOverride: minio-tinode
+
 replicaCount: 1
 
 image:
