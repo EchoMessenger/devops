@@ -16,7 +16,9 @@ storage:
 
 minio:
   rootUser: admin
-  rootPassword: changeme-minio
+  # If empty, password is generated once and then reused from the existing Secret on upgrades.
+  # Can be set explicitly for manual override.
+  rootPassword: ""
   dataPath: /data
   region: us-east-1
   bucket:
