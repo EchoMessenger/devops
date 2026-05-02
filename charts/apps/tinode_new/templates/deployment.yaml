@@ -356,9 +356,10 @@ spec:
         {{- if and (eq .Values.media.handler "fs") .Values.persistence.enabled }}
         - name: uploads
           mountPath: {{ .Values.persistence.mountPath }}
+        {{- end }}
+        # Logs volume (always mounted - RAM-based for cloud-native logging)
         - name: logs
           mountPath: /var/log
-        {{- end }}
         # Hardening: рабочая директория заполнена initContainer
         - name: tinode-workdir
           mountPath: /opt/tinode
@@ -394,10 +395,14 @@ spec:
       - name: uploads
         persistentVolumeClaim:
           claimName: {{ include "tinode.fullname" . }}-uploads
-      - name: logs
-        persistentVolumeClaim:
-          claimName: tinode-logs
       {{- end }}
+      
+      # Logs volume (RAM-based for all modes: S3, fs, etc.)
+      # This ensures entrypoint.sh can write logs without disk I/O
+      - name: logs
+        emptyDir:
+          medium: Memory
+          sizeLimit: 100Mi
 
       - name: tinode-workdir
         emptyDir:
