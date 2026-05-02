@@ -150,11 +150,35 @@ spec:
               key: aws-secret-access-key
               optional: true
         - name: AWS_REGION
+          {{- if .Values.openbao.enabled }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: s3-region
+              optional: true
+          {{- else }}
           value: {{ .Values.media.s3.region | quote }}
+          {{- end }}
         - name: AWS_S3_BUCKET
+          {{- if .Values.openbao.enabled }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: s3-bucket
+              optional: true
+          {{- else }}
           value: {{ .Values.media.s3.bucket | quote }}
+          {{- end }}
         - name: AWS_S3_ENDPOINT
+          {{- if .Values.openbao.enabled }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "tinode.fullname" . }}
+              key: s3-endpoint
+              optional: true
+          {{- else }}
           value: {{ .Values.media.s3.endpoint | quote }}
+          {{- end }}
         - name: AWS_CORS_ORIGINS
           value: {{ .Values.media.s3.corsOrigins | quote }}
         {{- end }}
