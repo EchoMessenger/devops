@@ -95,7 +95,7 @@ encryption:
 
 # Конфигурация хранилища медиа
 media:
-  handler: "fs"  # fs или s3
+  handler: "s3"  # fs или s3
   maxSize: 33554432  # 32MB
   
   # Настройки файловой системы
@@ -103,12 +103,13 @@ media:
     corsOrigins: '["*"]'
   
   # Настройки S3
+  # При использовании OpenBao, значения будут заполнены через ExternalSecret
   s3:
-    accessKeyId: ""
-    secretAccessKey: ""
-    region: ""
-    bucket: ""
-    endpoint: ""
+    accessKeyId: ""  # заполняется из OpenBao: tinode/s3 -> accessKey
+    secretAccessKey: ""  # заполняется из OpenBao: tinode/s3 -> secretKey
+    region: "us-east-1"  # совпадает с OpenBao: region
+    bucket: "tinode-minio"  # совпадает с OpenBao: bucket
+    endpoint: ""  # заполняется из OpenBao: tinode/s3 -> endpoint
     corsOrigins: '["*"]'
 
 # Email верификация

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: minio-tinode
+description: MinIO object storage for Tinode chat server media uploads
+type: application
+version: 0.1.0
+appVersion: "RELEASE.2026-02-18T16-25-55Z"

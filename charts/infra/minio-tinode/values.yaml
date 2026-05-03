@@ -1,3 +1,5 @@
+fullnameOverride: minio-tinode
+
 replicaCount: 1
 
 image:
@@ -23,15 +25,17 @@ minio:
   region: us-east-1
   bucket:
     create: true
-    name: audit-exports
+    name: tinode-minio
   cors:
     enabled: true
     allowedOrigins:
-      - https://www.echo-messenger.ru
-      - https://echo-messenger.ru
+      - https://tinode.echo-messenger.ru
+      - http://tinode.echo-messenger.ru
     allowedMethods:
       - GET
       - HEAD
+      - PUT
+      - POST
     allowedHeaders:
       - "*"
     exposeHeaders:
@@ -54,7 +58,7 @@ resources:
     cpu: 1000m
 
 ingress:
-  enabled: true
+  enabled: false
   className: traefik
   servicePort: api
   annotations:
@@ -62,19 +66,19 @@ ingress:
     traefik.ingress.kubernetes.io/router.tls: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: minio.echo-messenger.ru
+    - host: minio-tinode.echo-messenger.ru
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: minio-tls
+    - secretName: minio-tinode-tls
       hosts:
-        - minio.echo-messenger.ru
+        - minio-tinode.echo-messenger.ru
 
 pushSecret:
   enabled: true
   secretStoreName: openbao-global
-  remotePath: audit/s3
+  remotePath: tinode/s3
   useProperty: true
   refreshInterval: "1h"
   deletionPolicy: None
