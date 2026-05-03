@@ -21,7 +21,7 @@ app:
 keycloak:
   url: "https://auth.echo-messenger.ru"
   realm: "echo"
-  clientId: "auth"
+  clientId: "webapp"
 
 service:
   type: ClusterIP
@@ -73,6 +73,8 @@ externalSecrets:
     name: openbao-global
     kind: ClusterSecretStore
   databasePath: "restauth/database"
+  keycloakSecretPath: "restauth/keycloak"
+  keycloakSecretEnabled: true
 
 ingress:
   enabled: false
