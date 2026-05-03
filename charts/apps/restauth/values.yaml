@@ -21,7 +21,7 @@ app:
 keycloak:
   url: "https://auth.echo-messenger.ru"
   realm: "echo"
-  clientId: "webapp"
+  clientId: "auth"
 
 service:
   type: ClusterIP
