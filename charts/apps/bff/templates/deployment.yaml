@@ -55,30 +55,25 @@ spec:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}
               key: RATE_LIMIT_PER_MINUTE
-        # From ExternalSecrets (sensitive data)
+        # From ExternalSecrets (sensitive data from OpenBao/Vault)
         {{- if .Values.externalSecrets.enabled }}
         - name: KEYCLOAK_ISSUER_URI
           valueFrom:
             secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: KEYCLOAK_ISSUER_URI
+              name: {{ include "bff.fullname" . }}-keycloak
+              key: issuer-uri
         - name: AUDIT_SERVICE_URL
           valueFrom:
             secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: AUDIT_SERVICE_URL
+              name: {{ include "bff.fullname" . }}-services
+              key: audit-url
         - name: TASKTRACKER_SERVICE_URL
           valueFrom:
             secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: TASKTRACKER_SERVICE_URL
-        - name: RESTAUTH_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: RESTAUTH_SERVICE_URL
+              name: {{ include "bff.fullname" . }}-services
+              key: tasktracker-url
         {{- else }}
-        # Fallback: load from ConfigMap if ExternalSecrets disabled
+        # Fallback: load from ConfigMap if ExternalSecrets disabled (dev mode)
         - name: KEYCLOAK_ISSUER_URI
           valueFrom:
             configMapKeyRef:
@@ -94,11 +89,6 @@ spec:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}-fallback
               key: TASKTRACKER_SERVICE_URL
-        - name: RESTAUTH_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "bff.fullname" . }}-fallback
-              key: RESTAUTH_SERVICE_URL
         {{- end }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 12 }}

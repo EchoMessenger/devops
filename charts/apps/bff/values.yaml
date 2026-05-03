@@ -73,26 +73,36 @@ env:
   LOG_LEVEL: "info"
   RATE_LIMIT_PER_MINUTE: "100"
 
-# ExternalSecrets configuration (for service URLs and sensitive data from OpenBao/Vault)
+# ExternalSecrets configuration for OpenBao/Vault integration
 # In production, ALL service URLs and credentials come from OpenBao
 # This allows changing infrastructure without redeploying the chart
 externalSecrets:
-  enabled: false # Set to true in production, false in development/testing
-  backendType: openbao
-  vaultAddr: "http://openbao-core.default.svc.cluster.local:8200"
-  vaultPath: "secret/data/echomessenger/bff"
-  vaultAuthPath: "auth/kubernetes"
-  vaultRole: "bff"
-  # Secret keys to sync from OpenBao
-  secretKeys:
-    - name: KEYCLOAK_ISSUER_URI
-      key: keycloak_issuer_uri
-    - name: AUDIT_SERVICE_URL
-      key: audit_service_url
-    - name: TASKTRACKER_SERVICE_URL
-      key: tasktracker_service_url
-    - name: RESTAUTH_SERVICE_URL
-      key: restauth_service_url
+  enabled: true
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao-global
+    kind: ClusterSecretStore
+  
+  # Keycloak configuration
+  # Path in OpenBao: platform/keycloak
+  # Expected field: issuer-uri
+  keycloak:
+    remoteRef:
+      key: platform/keycloak
+  
+  # Backend services configuration
+  # Path in OpenBao: echomessenger/bff/services
+  # Expected fields: audit-url, tasktracker-url
+  services:
+    remoteRef:
+      key: echomessenger/bff/services
+  
+  # GHCR container registry credentials
+  # Path in OpenBao: registry/ghcr
+  # Expected fields: username, token
+  registry:
+    remoteRef:
+      key: registry/ghcr
 
 # Fallback service URLs for development mode (when externalSecrets.enabled=false)
 # Note: These values should match the ones stored in OpenBao for consistency
@@ -100,7 +110,6 @@ fallbackServiceUrls:
   keycloakIssuerUri: "http://keycloak.default.svc.cluster.local:8080/realms/echo"
   auditServiceUrl: "http://audit.default.svc.cluster.local:8080"
   tasktrackerServiceUrl: "http://tasktracker.default.svc.cluster.local:8000"
-  restauthServiceUrl: "http://restauth.default.svc.cluster.local:8000"
 
 # Health check settings
 livenessProbe:
