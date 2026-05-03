@@ -10,6 +10,8 @@ data:
   RATE_LIMIT_PER_MINUTE: {{ .Values.env.RATE_LIMIT_PER_MINUTE | quote }}
   AUDIT_SERVICE_URL: {{ .Values.env.AUDIT_SERVICE_URL | quote }}
   TASKTRACKER_SERVICE_URL: {{ .Values.env.TASKTRACKER_SERVICE_URL | quote }}
+  AUDIT_SERVICE_HEALTH_PORT: {{ .Values.env.AUDIT_SERVICE_HEALTH_PORT | quote }}
+  TASKTRACKER_SERVICE_HEALTH_PORT: {{ .Values.env.TASKTRACKER_SERVICE_HEALTH_PORT | quote }}
 ---
 {{- if not .Values.externalSecrets.enabled }}
 # Fallback ConfigMap when ExternalSecrets is disabled (for dev/testing only)

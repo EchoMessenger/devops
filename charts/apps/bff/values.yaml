@@ -75,6 +75,11 @@ env:
   # Backend service URLs (can be overridden per environment)
   AUDIT_SERVICE_URL: "http://audit-audit-service.audit.svc.cluster.local:8080"
   TASKTRACKER_SERVICE_URL: "http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000"
+  # Health check ports for downstream services
+  # Audit service exposes /health on port 8081 (management port)
+  AUDIT_SERVICE_HEALTH_PORT: "8081"
+  # TaskTracker service exposes /health on its main port
+  TASKTRACKER_SERVICE_HEALTH_PORT: "8000"
 
 # ExternalSecrets configuration for OpenBao/Vault integration
 # Manages Keycloak credentials and GHCR image pull secrets
