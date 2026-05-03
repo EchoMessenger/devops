@@ -73,8 +73,8 @@ env:
   LOG_LEVEL: "info"
   RATE_LIMIT_PER_MINUTE: "100"
   # Backend service URLs (can be overridden per environment)
-  AUDIT_SERVICE_URL: "http://audit.audit.svc.cluster.local:8080"
-  TASKTRACKER_SERVICE_URL: "http://tasktracker.tasktracker.svc.cluster.local:8000"
+  AUDIT_SERVICE_URL: "http://audit-audit-service.audit.svc.cluster.local:8080"
+  TASKTRACKER_SERVICE_URL: "http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000"
 
 # ExternalSecrets configuration for OpenBao/Vault integration
 # Manages Keycloak credentials and GHCR image pull secrets
