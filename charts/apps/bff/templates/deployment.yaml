@@ -39,7 +39,7 @@ spec:
           containerPort: {{ .Values.service.targetPort }}
           protocol: TCP
         env:
-        # From ConfigMap (non-sensitive)
+        # Non-sensitive configuration from ConfigMap
         - name: BFF_PORT
           valueFrom:
             configMapKeyRef:
@@ -55,40 +55,29 @@ spec:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}
               key: RATE_LIMIT_PER_MINUTE
-        # From ExternalSecrets (sensitive data from OpenBao/Vault)
+        - name: AUDIT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: AUDIT_SERVICE_URL
+        - name: TASKTRACKER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: TASKTRACKER_SERVICE_URL
+        # Keycloak issuer URI (from ExternalSecrets or Fallback ConfigMap)
         {{- if .Values.externalSecrets.enabled }}
         - name: KEYCLOAK_ISSUER_URI
           valueFrom:
             secretKeyRef:
               name: {{ include "bff.fullname" . }}-keycloak
               key: issuer-uri
-        - name: AUDIT_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "bff.fullname" . }}-services
-              key: audit-url
-        - name: TASKTRACKER_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "bff.fullname" . }}-services
-              key: tasktracker-url
         {{- else }}
-        # Fallback: load from ConfigMap if ExternalSecrets disabled (dev mode)
         - name: KEYCLOAK_ISSUER_URI
           valueFrom:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}-fallback
               key: KEYCLOAK_ISSUER_URI
-        - name: AUDIT_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "bff.fullname" . }}-fallback
-              key: AUDIT_SERVICE_URL
-        - name: TASKTRACKER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "bff.fullname" . }}-fallback
-              key: TASKTRACKER_SERVICE_URL
         {{- end }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 12 }}

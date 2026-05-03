@@ -72,10 +72,12 @@ env:
   BFF_PORT: "7000"
   LOG_LEVEL: "info"
   RATE_LIMIT_PER_MINUTE: "100"
+  # Backend service URLs (can be overridden per environment)
+  AUDIT_SERVICE_URL: "http://audit.default.svc.cluster.local:8080"
+  TASKTRACKER_SERVICE_URL: "http://tasktracker.default.svc.cluster.local:8000"
 
 # ExternalSecrets configuration for OpenBao/Vault integration
-# In production, ALL service URLs and credentials come from OpenBao
-# This allows changing infrastructure without redeploying the chart
+# Manages Keycloak credentials and GHCR image pull secrets
 externalSecrets:
   enabled: true
   refreshInterval: 1h
@@ -90,13 +92,6 @@ externalSecrets:
     remoteRef:
       key: platform/keycloak
   
-  # Backend services configuration
-  # Path in OpenBao: echomessenger/bff/services
-  # Expected fields: audit-url, tasktracker-url
-  services:
-    remoteRef:
-      key: echomessenger/bff/services
-  
   # GHCR container registry credentials
   # Path in OpenBao: registry/ghcr
   # Expected fields: username, token
@@ -104,12 +99,8 @@ externalSecrets:
     remoteRef:
       key: registry/ghcr
 
-# Fallback service URLs for development mode (when externalSecrets.enabled=false)
-# Note: These values should match the ones stored in OpenBao for consistency
-fallbackServiceUrls:
-  keycloakIssuerUri: "http://keycloak.default.svc.cluster.local:8080/realms/echo"
-  auditServiceUrl: "http://audit.default.svc.cluster.local:8080"
-  tasktrackerServiceUrl: "http://tasktracker.default.svc.cluster.local:8000"
+# Fallback Keycloak URI for development mode (when externalSecrets.enabled=false)
+fallbackKeycloakIssuerUri: "http://keycloak.default.svc.cluster.local:8080/realms/echo"
 
 # Health check settings
 livenessProbe:
