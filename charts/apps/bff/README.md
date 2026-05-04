@@ -95,6 +95,10 @@ KEYCLOAK_ISSUER_URI: "http://keycloak.default.svc.cluster.local:8080/realms/echo
 ```yaml
 AUDIT_SERVICE_URL: "http://audit-audit-service.audit.svc.cluster.local:8080"
 TASKTRACKER_SERVICE_URL: "http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000"
+AUDIT_SERVICE_HEALTH_PORT: "8081"
+TASKTRACKER_SERVICE_HEALTH_PORT: "8000"
+AUDIT_SERVICE_HEALTH_PATH: "/actuator/health/readiness"
+TASKTRACKER_SERVICE_HEALTH_PATH: "/health"
 ```
 
 ### Service-to-Service Communication
@@ -244,7 +248,7 @@ The `/ready` endpoint checks downstream service connectivity. Verify:
 kubectl exec -it <pod-name> -- nslookup audit-audit-service.audit.svc.cluster.local
 
 # Test connectivity to backends
-kubectl exec -it <pod-name> -- curl http://audit-audit-service.audit.svc.cluster.local:8080/health
+kubectl exec -it <pod-name> -- curl http://audit-audit-service.audit.svc.cluster.local:8081/actuator/health/readiness
 ```
 
 ### ExternalSecrets not syncing?

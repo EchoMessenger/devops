@@ -76,10 +76,13 @@ env:
   AUDIT_SERVICE_URL: "http://audit-audit-service.audit.svc.cluster.local:8080"
   TASKTRACKER_SERVICE_URL: "http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000"
   # Health check ports for downstream services
-  # Audit service exposes /health on port 8081 (management port)
+  # Audit service exposes actuator health on management port 8081
   AUDIT_SERVICE_HEALTH_PORT: "8081"
   # TaskTracker service exposes /health on its main port
   TASKTRACKER_SERVICE_HEALTH_PORT: "8000"
+  # Health check paths for downstream services
+  AUDIT_SERVICE_HEALTH_PATH: "/actuator/health/readiness"
+  TASKTRACKER_SERVICE_HEALTH_PATH: "/health"
 
 # ExternalSecrets configuration for OpenBao/Vault integration
 # Manages Keycloak credentials and GHCR image pull secrets

@@ -75,6 +75,16 @@ spec:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}
               key: TASKTRACKER_SERVICE_HEALTH_PORT
+        - name: AUDIT_SERVICE_HEALTH_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: AUDIT_SERVICE_HEALTH_PATH
+        - name: TASKTRACKER_SERVICE_HEALTH_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: TASKTRACKER_SERVICE_HEALTH_PATH
         # Keycloak issuer URI (from ExternalSecrets or Fallback ConfigMap)
         {{- if .Values.externalSecrets.enabled }}
         - name: KEYCLOAK_ISSUER_URI
