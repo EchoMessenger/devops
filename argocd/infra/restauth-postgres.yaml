@@ -14,6 +14,7 @@ spec:
     helm:
       releaseName: restauth-postgres
   destination:
+    server: https://kubernetes.default.svc
     namespace: restauth
   syncPolicy:
     automated: { prune: false, selfHeal: true }
