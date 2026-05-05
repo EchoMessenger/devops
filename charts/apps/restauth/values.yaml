@@ -73,6 +73,8 @@ externalSecrets:
     name: openbao-global
     kind: ClusterSecretStore
   databasePath: "restauth/database"
+  keycloakSecretPath: "restauth/keycloak"
+  keycloakSecretEnabled: true
 
 ingress:
   enabled: false

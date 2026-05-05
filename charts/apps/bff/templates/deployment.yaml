@@ -39,7 +39,7 @@ spec:
           containerPort: {{ .Values.service.targetPort }}
           protocol: TCP
         env:
-        # From ConfigMap (non-sensitive)
+        # Non-sensitive configuration from ConfigMap
         - name: BFF_PORT
           valueFrom:
             configMapKeyRef:
@@ -55,50 +55,49 @@ spec:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}
               key: RATE_LIMIT_PER_MINUTE
-        # From ExternalSecrets (sensitive data)
+        - name: AUDIT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: AUDIT_SERVICE_URL
+        - name: TASKTRACKER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: TASKTRACKER_SERVICE_URL
+        - name: AUDIT_SERVICE_HEALTH_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: AUDIT_SERVICE_HEALTH_PORT
+        - name: TASKTRACKER_SERVICE_HEALTH_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: TASKTRACKER_SERVICE_HEALTH_PORT
+        - name: AUDIT_SERVICE_HEALTH_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: AUDIT_SERVICE_HEALTH_PATH
+        - name: TASKTRACKER_SERVICE_HEALTH_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "bff.fullname" . }}
+              key: TASKTRACKER_SERVICE_HEALTH_PATH
+        # Keycloak issuer URI (from ExternalSecrets or Fallback ConfigMap)
         {{- if .Values.externalSecrets.enabled }}
         - name: KEYCLOAK_ISSUER_URI
           valueFrom:
             secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: KEYCLOAK_ISSUER_URI
-        - name: AUDIT_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: AUDIT_SERVICE_URL
-        - name: TASKTRACKER_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: TASKTRACKER_SERVICE_URL
-        - name: RESTAUTH_SERVICE_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "bff.fullname" . }}-secrets
-              key: RESTAUTH_SERVICE_URL
+              name: {{ include "bff.fullname" . }}-keycloak
+              key: issuer-uri
         {{- else }}
-        # Fallback: load from ConfigMap if ExternalSecrets disabled
         - name: KEYCLOAK_ISSUER_URI
           valueFrom:
             configMapKeyRef:
               name: {{ include "bff.fullname" . }}-fallback
               key: KEYCLOAK_ISSUER_URI
-        - name: AUDIT_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "bff.fullname" . }}-fallback
-              key: AUDIT_SERVICE_URL
-        - name: TASKTRACKER_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "bff.fullname" . }}-fallback
-              key: TASKTRACKER_SERVICE_URL
-        - name: RESTAUTH_SERVICE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "bff.fullname" . }}-fallback
-              key: RESTAUTH_SERVICE_URL
         {{- end }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 12 }}

@@ -10,7 +10,7 @@ The BFF service is a stateless API gateway that sits between the React web front
 - **JWT Authentication**: Token validation against Keycloak
 - **Rate Limiting**: Per-IP request throttling with token bucket algorithm
 - **CORS Handling**: Eliminates cross-origin request issues
-- **Request Forwarding**: HTTP proxy to Audit, TaskTracker, and RestAuth services
+- **Request Forwarding**: HTTP proxy to Audit and TaskTracker services
 
 ## Prerequisites
 
@@ -88,9 +88,17 @@ RATE_LIMIT_PER_MINUTE: "100"  # Requests per minute per IP
 
 ```yaml
 KEYCLOAK_ISSUER_URI: "http://keycloak.default.svc.cluster.local:8080/realms/echo"
-AUDIT_SERVICE_URL: "http://audit.default.svc.cluster.local:8080"
-TASKTRACKER_SERVICE_URL: "http://tasktracker.default.svc.cluster.local:8000"
-RESTAUTH_SERVICE_URL: "http://restauth.default.svc.cluster.local:8000"
+```
+
+#### Backend Service URLs (ConfigMap)
+
+```yaml
+AUDIT_SERVICE_URL: "http://audit-audit-service.audit.svc.cluster.local:8080"
+TASKTRACKER_SERVICE_URL: "http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000"
+AUDIT_SERVICE_HEALTH_PORT: "8081"
+TASKTRACKER_SERVICE_HEALTH_PORT: "8000"
+AUDIT_SERVICE_HEALTH_PATH: "/actuator/health/readiness"
+TASKTRACKER_SERVICE_HEALTH_PATH: "/health"
 ```
 
 ### Service-to-Service Communication
@@ -104,9 +112,8 @@ http://<service-name>.<namespace>.svc.cluster.local:<port>
 This ensures proper DNS resolution within the Kubernetes cluster and works across namespaces.
 
 **Examples**:
-- Audit: `http://audit.default.svc.cluster.local:8080`
-- TaskTracker: `http://tasktracker.default.svc.cluster.local:8000`
-- RestAuth: `http://restauth.default.svc.cluster.local:8000`
+- Audit: `http://audit-audit-service.audit.svc.cluster.local:8080`
+- TaskTracker: `http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000`
 
 ### Custom Configuration
 
@@ -238,10 +245,10 @@ The `/ready` endpoint checks downstream service connectivity. Verify:
 
 ```bash
 # Check service DNS resolution (from within pod)
-kubectl exec -it <pod-name> -- nslookup audit.default.svc.cluster.local
+kubectl exec -it <pod-name> -- nslookup audit-audit-service.audit.svc.cluster.local
 
 # Test connectivity to backends
-kubectl exec -it <pod-name> -- curl http://audit.default.svc.cluster.local:8080/health
+kubectl exec -it <pod-name> -- curl http://audit-audit-service.audit.svc.cluster.local:8081/actuator/health/readiness
 ```
 
 ### ExternalSecrets not syncing?
@@ -325,9 +332,8 @@ http://<service>.<namespace>.svc.cluster.local:<port>
 | Service | URL |
 |---------|-----|
 | Keycloak | `http://keycloak.default.svc.cluster.local:8080` |
-| Audit | `http://audit.default.svc.cluster.local:8080` |
-| TaskTracker | `http://tasktracker.default.svc.cluster.local:8000` |
-| RestAuth | `http://restauth.default.svc.cluster.local:8000` |
+| Audit | `http://audit-audit-service.audit.svc.cluster.local:8080` |
+| TaskTracker | `http://tasktracker-tasktracker.tasktracker.svc.cluster.local:8000` |
 
 This format ensures DNS resolution is explicit and works across all namespaces.
 

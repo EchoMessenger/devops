@@ -8,10 +8,16 @@ data:
   BFF_PORT: {{ .Values.env.BFF_PORT | quote }}
   LOG_LEVEL: {{ .Values.env.LOG_LEVEL | quote }}
   RATE_LIMIT_PER_MINUTE: {{ .Values.env.RATE_LIMIT_PER_MINUTE | quote }}
+  AUDIT_SERVICE_URL: {{ .Values.env.AUDIT_SERVICE_URL | quote }}
+  TASKTRACKER_SERVICE_URL: {{ .Values.env.TASKTRACKER_SERVICE_URL | quote }}
+  AUDIT_SERVICE_HEALTH_PORT: {{ .Values.env.AUDIT_SERVICE_HEALTH_PORT | quote }}
+  TASKTRACKER_SERVICE_HEALTH_PORT: {{ .Values.env.TASKTRACKER_SERVICE_HEALTH_PORT | quote }}
+  AUDIT_SERVICE_HEALTH_PATH: {{ .Values.env.AUDIT_SERVICE_HEALTH_PATH | quote }}
+  TASKTRACKER_SERVICE_HEALTH_PATH: {{ .Values.env.TASKTRACKER_SERVICE_HEALTH_PATH | quote }}
 ---
 {{- if not .Values.externalSecrets.enabled }}
 # Fallback ConfigMap when ExternalSecrets is disabled (for dev/testing only)
-# In development mode, service URLs are provided directly in ConfigMap
+# In development mode, Keycloak issuer URI is provided directly
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -19,8 +25,5 @@ metadata:
   labels:
     {{- include "bff.labels" . | nindent 4 }}
 data:
-  KEYCLOAK_ISSUER_URI: {{ .Values.fallbackServiceUrls.keycloakIssuerUri | quote }}
-  AUDIT_SERVICE_URL: {{ .Values.fallbackServiceUrls.auditServiceUrl | quote }}
-  TASKTRACKER_SERVICE_URL: {{ .Values.fallbackServiceUrls.tasktrackerServiceUrl | quote }}
-  RESTAUTH_SERVICE_URL: {{ .Values.fallbackServiceUrls.restauthServiceUrl | quote }}
+  KEYCLOAK_ISSUER_URI: {{ .Values.fallbackKeycloakIssuerUri | quote }}
 {{- end }}
