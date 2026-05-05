@@ -8,7 +8,8 @@ metadata:
 data:
   default.conf: |
     resolver kube-dns.kube-system.svc.cluster.local valid=10s;
-    {{- $tinodeBackendHost := default (printf "tinode.tinode.svc.cluster.local" .Release.Namespace) .Values.tinodeServer.host }}
+    {{- $tinodeBackendNamespace := default "tinode" .Values.tinodeServer.namespace }}
+    {{- $tinodeBackendHost := default (printf "tinode.%s.svc.cluster.local" $tinodeBackendNamespace) .Values.tinodeServer.host }}
 
     server {
         listen 8080;

@@ -13,8 +13,10 @@ fullnameOverride: ""
 
 tinodeServer:
   # Backend upstream for nginx /v0 proxy.
-  # Leave empty to use tinode.<release namespace>.svc.cluster.local.
+  # Leave empty to use tinode.<namespace>.svc.cluster.local.
   host: ""
+  # Tinode runs in a separate namespace from webapp.
+  namespace: tinode
   port: 6060
   # Browser-side Tinode host is resolved from the webapp origin.
 
@@ -25,8 +27,6 @@ keycloak:
   scope: "openid profile email"
 
 service:
-  name: webapp
-  namespace: tinode
   type: ClusterIP
   port: 80
 
