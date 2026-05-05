@@ -12,7 +12,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 tinodeServer:
-  host: tinode.tinode.svc.cluster.local
+  host: tinode.echo-messenger.ru
   port: 6060
   # For local development: localhost
   # For production with Ingress: tinode.echo-messenger.ru
