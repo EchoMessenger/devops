@@ -12,10 +12,11 @@ nameOverride: ""
 fullnameOverride: ""
 
 tinodeServer:
-  host: tinode.echo-messenger.ru
+  # Backend upstream for nginx /v0 proxy.
+  # Leave empty to use tinode.<release namespace>.svc.cluster.local.
+  host: ""
   port: 6060
-  # For local development: localhost
-  # For production with Ingress: tinode.echo-messenger.ru
+  # Browser-side Tinode host is resolved from the webapp origin.
 
 keycloak:
   url: "https://auth.echo-messenger.ru"
