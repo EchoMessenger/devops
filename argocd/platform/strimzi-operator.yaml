@@ -6,6 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 spec:
+  project: default
   source:
     repoURL: https://strimzi.io/charts/
     chart: strimzi-kafka-operator
