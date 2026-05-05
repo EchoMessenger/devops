@@ -10,6 +10,8 @@ spec:
         revision: HEAD
         directories:
           - path: charts/infra/*
+          - path: charts/infra/monitoring
+            exclude: true
   template:
     metadata:
       name: 'infra-{{path.basename}}'
@@ -27,4 +29,4 @@ spec:
         server: 'https://kubernetes.default.svc'
         namespace: '{{path.basename}}'
       syncPolicy:
-        automated: {prune: true, selfHeal: true}
+        automated: {prune: false, selfHeal: true}

@@ -13,7 +13,31 @@
    - `extraVolumes/extraVolumeMounts` на `/var/log/openbao`
    - `extraScrapeConfigs` с `job_name: openbao-audit`
 
-## Установка / обновление стека
+## Argo CD (рекомендуемый способ)
+
+Для GitOps в репозитории добавлен отдельный манифест:
+
+- `devops/argocd/monitoring.yaml` — 4 приложения:
+  - `monitoring-kube-prometheus-stack` (wave `0`)
+  - `monitoring-loki` (wave `1`)
+  - `monitoring-promtail` (wave `2`)
+  - `monitoring-addons` (wave `3`)
+
+И обновлен `devops/argocd/infra.yaml`: `charts/infra/monitoring` исключен из общего `infra-apps`, чтобы monitoring не пытался устанавливаться как обычный Helm chart.
+
+Применение:
+
+```sh
+kubectl apply -f devops/argocd/infra.yaml
+kubectl apply -f devops/argocd/monitoring.yaml
+```
+
+Важно:
+- для Loki в Argo CD зафиксированы те же обязательные параметры, что и в ручном `helm upgrade` (SingleBinary + schemaConfig + delete_request_store);
+- `CreateNamespace=true`, `automated.prune=true`, `automated.selfHeal=true` включены;
+- `monitoring-addons` берет только `*.yaml` манифесты (без `values-*.yaml` и `README.md`).
+
+## Установка / обновление стека (ручной Helm)
 
 Выполнять из корня репозитория:
 
