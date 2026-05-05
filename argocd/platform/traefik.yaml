@@ -6,6 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-3"
 spec:
+  project: default
   source:
     repoURL: https://helm.traefik.io/traefik
     chart: traefik-crd
@@ -13,6 +14,7 @@ spec:
     helm:
       releaseName: traefik-crd
   destination:
+    server: https://kubernetes.default.svc
     namespace: kube-system
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -23,6 +25,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-3"
 spec:
+  project: default
   source:
     repoURL: https://helm.traefik.io/traefik
     chart: traefik
@@ -30,4 +33,5 @@ spec:
     helm:
       releaseName: traefik
   destination:
+    server: https://kubernetes.default.svc
     namespace: kube-system
