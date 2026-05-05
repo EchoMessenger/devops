@@ -44,14 +44,14 @@ ingress:
     traefik.ingress.kubernetes.io/router.tls: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: echo-messenger.ru
+    - host: api.echo-messenger.ru
       paths:
         - path: /bff
           pathType: Prefix
   tls:
     - secretName: echo-tls
       hosts:
-        - echo-messenger.ru
+        - api.echo-messenger.ru
 
 resources:
   requests:
