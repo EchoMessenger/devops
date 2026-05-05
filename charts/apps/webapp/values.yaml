@@ -12,10 +12,13 @@ nameOverride: ""
 fullnameOverride: ""
 
 tinodeServer:
-  host: tinode.tinode.svc.cluster.local
+  # Backend upstream for nginx /v0 proxy.
+  # Leave empty to use tinode.<namespace>.svc.cluster.local.
+  host: ""
+  # Tinode runs in a separate namespace from webapp.
+  namespace: tinode
   port: 6060
-  # For local development: localhost
-  # For production with Ingress: tinode.echo-messenger.ru
+  # Browser-side Tinode host is resolved from the webapp origin.
 
 keycloak:
   url: "https://auth.echo-messenger.ru"
@@ -24,8 +27,6 @@ keycloak:
   scope: "openid profile email"
 
 service:
-  name: webapp
-  namespace: tinode
   type: ClusterIP
   port: 80
 

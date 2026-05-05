@@ -15,7 +15,10 @@ app:
   host: "0.0.0.0"
   port: 8000
   debug: false
-  restrictedTagNs: "rest,email,uname"
+  # /rtagns response: namespaces restricted for client-side tag mutation.
+  # "basic" login is rewritten to "rest" in Tinode logical_names, so keep both explicit.
+  # "role" is restricted to prevent self-assigned privilege escalation.
+  restrictedTagNs: "basic,rest,email,uname,role"
   loginValidationRe: "^[a-zA-Z0-9_.\\-@]{3,64}$"
 
 keycloak:

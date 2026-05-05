@@ -8,6 +8,8 @@ metadata:
 data:
   default.conf: |
     resolver kube-dns.kube-system.svc.cluster.local valid=10s;
+    {{- $tinodeBackendNamespace := default "tinode" .Values.tinodeServer.namespace }}
+    {{- $tinodeBackendHost := default (printf "tinode.%s.svc.cluster.local" $tinodeBackendNamespace) .Values.tinodeServer.host }}
 
     server {
         listen 8080;
@@ -23,7 +25,7 @@ data:
                    text/xml application/xml image/svg+xml;
 
         # --- Tinode API + WebSocket ---
-        set $tinode_backend "http://{{ .Values.tinodeServer.host }}:{{ .Values.tinodeServer.port }}";
+        set $tinode_backend "http://{{ $tinodeBackendHost }}:{{ .Values.tinodeServer.port }}";
 
         location /v0/ {
             proxy_pass $tinode_backend;

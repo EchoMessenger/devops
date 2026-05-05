@@ -173,6 +173,8 @@ defaultCountryCode: "RU"
 # REST authentication (Tinode auth_config.rest)
 auth:
   rest:
+    # Base URL of restauth service (Tinode calls /auth, /link and /rtagns when use_separate_endpoints=true).
+    # Login scheme "basic" is rewritten to "rest" by logical_names in chat/docker/tinode/config.template.
     serverUrl: "http://restauth.restauth.svc.cluster.local:8000/"
 
 # Путь для статуса сервера
