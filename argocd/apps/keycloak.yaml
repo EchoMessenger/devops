@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  source:
+    repoURL: https://github.com/EchoMessenger/devops.git
+    path: charts/apps/keycloak
+    targetRevision: HEAD
+    helm:
+      releaseName: keycloak
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [CreateNamespace=true]

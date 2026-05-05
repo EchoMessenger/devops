@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: restauth-postgres
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  source:
+    repoURL: https://github.com/EchoMessenger/devops.git
+    path: charts/infra/restauth-postgres
+    targetRevision: HEAD
+    helm:
+      releaseName: restauth-postgres
+  destination:
+    namespace: restauth
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [ CreateNamespace=true ]

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: restauth
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  source:
+    repoURL: https://github.com/EchoMessenger/devops.git
+    path: charts/apps/restauth
+    targetRevision: HEAD
+    helm:
+      releaseName: restauth
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: restauth
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
