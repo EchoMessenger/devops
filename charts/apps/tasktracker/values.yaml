@@ -16,6 +16,11 @@ database:
   sslmode: "disable"
   storage: "5Gi"
 
+keycloak:
+  issuerUri: "https://auth.echo-messenger.ru/realms/echo"
+#  realm: "echo"
+  clientId: "auth"
+
 kafka:
   brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
   topic: "tinode.account-events"
@@ -50,6 +55,7 @@ openbao:
   secretsPath: "kafka"
   databaseSecretsPath: "tasktracker/postgres"
   registrySecretsPath: "registry/tasktracker/ghcr"
+  keycloakSecretsPath: "tasktracker/keycloak"
   resyncInterval: "10s"
 
 resources:

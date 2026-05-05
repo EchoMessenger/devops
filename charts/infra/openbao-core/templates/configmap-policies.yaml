@@ -87,5 +87,26 @@ data:
       capabilities = ["create", "read", "update", "delete"]
     }
     path "secret/metadata/restauth/*" {
+    # tasktracker/postgres - полный доступ
+    path "secret/data/tasktracker/postgres" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/tasktracker/postgres" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
+    # tasktracker/keycloak - полный доступ
+    path "secret/data/tasktracker/keycloak" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/tasktracker/keycloak" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
+    # registry/tasktracker/ghcr - полный доступ
+    path "secret/data/registry/tasktracker/ghcr" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/registry/tasktracker/ghcr" {
       capabilities = ["create", "read", "update", "delete", "list"]
     }
