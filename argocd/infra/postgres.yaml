@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  source:
+    repoURL: https://github.com/EchoMessenger/devops.git
+    path: charts/infra/postgres
+    targetRevision: HEAD
+    helm:
+      releaseName: postgres
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tinode
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [ CreateNamespace=true ]

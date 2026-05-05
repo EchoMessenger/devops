@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafka-ui
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  source:
+    repoURL: https://github.com/EchoMessenger/devops.git
+    path: charts/apps/kafka-ui
+    targetRevision: HEAD
+    helm:
+      releaseName: kafka-ui
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kafka-ui
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions: [CreateNamespace=true]
