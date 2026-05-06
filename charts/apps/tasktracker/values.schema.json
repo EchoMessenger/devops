@@ -51,7 +51,7 @@
 
     "database": {
       "type": "object",
-      "required": ["port", "name", "username", "sslmode", "storage"],
+      "required": ["port", "name", "username", "sslmode"],
       "properties": {
         "port": {
           "type": "integer"
