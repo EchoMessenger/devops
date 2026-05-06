@@ -1,8 +1,8 @@
-{{- define "restauthPostgres.name" -}}
+{{- define "postgres.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "restauthPostgres.fullname" -}}
+{{- define "postgres.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -15,13 +15,13 @@
 {{- end }}
 {{- end }}
 
-{{- define "restauthPostgres.labels" -}}
+{{- define "postgres.labels" -}}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-{{ include "restauthPostgres.selectorLabels" . }}
+{{ include "postgres.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{- define "restauthPostgres.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "restauthPostgres.name" . }}
+{{- define "postgres.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "postgres.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
