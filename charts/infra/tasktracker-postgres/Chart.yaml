@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tasktracker-postgres
+description: PostgreSQL for tasktracker
+type: application
+version: 0.1.0
+appVersion: "16"

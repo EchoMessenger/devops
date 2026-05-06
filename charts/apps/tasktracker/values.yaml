@@ -10,29 +10,29 @@ service:
   type: ClusterIP
 
 database:
+  host: postgres
   port: 5432
-  name: "tasktracker"
+  name: tasktracker
   username: "postgres"
   sslmode: "disable"
-  storage: "5Gi"
 
 keycloak:
   issuerUri: "https://auth.echo-messenger.ru/realms/echo"
 #  realm: "echo"
   clientId: "auth"
 
-kafka:
-  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
-  topic: "tinode.account-events"
-  groupId: "fastapi-user-sync-consumer"
-  clientId: "tasktracker"
-  sasl:
-    enabled: true
-    mechanism: SCRAM-SHA-512
-    username: "user"
-  tls:
-    enabled: false
-    insecureSkipVerify: false
+#kafka:
+#  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
+#  topic: "tinode.account-events"
+#  groupId: "fastapi-user-sync-consumer"
+#  clientId: "tasktracker"
+#  sasl:
+#    enabled: true
+#    mechanism: SCRAM-SHA-512
+#    username: "user"
+#  tls:
+#    enabled: false
+#    insecureSkipVerify: false
 
 log:
   level: "info"
