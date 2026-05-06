@@ -77,3 +77,21 @@ ClickHouse JDBC URL
 {{- define "clickhouse.jdbcUrl" -}}
 jdbc:clickhouse://{{ include "clickhouse.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.httpPort }}/{{ .Values.clickhouse.defaultDatabase }}
 {{- end -}}
+
+{{/*
+Stable secret value: prefer explicit value, then reuse an existing Secret, then fall back to random on first install.
+*/}}
+{{- define "clickhouse.secretValue" -}}
+{{- $root := .root -}}
+{{- $explicit := .value | default "" -}}
+{{- if ne $explicit "" -}}
+{{- $explicit -}}
+{{- else -}}
+{{- $existingSecret := lookup "v1" "Secret" $root.Release.Namespace .secretName -}}
+{{- if $existingSecret -}}
+{{- index $existingSecret.data .secretKey | b64dec -}}
+{{- else -}}
+{{- randAlphaNum (.length | default 24) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

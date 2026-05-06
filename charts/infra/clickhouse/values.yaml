@@ -174,7 +174,7 @@ readinessProbe:
 # PushSecret настройки
 # ========================================
 pushSecret:
-  enabled: true
+  enabled: false
   secretStoreName: "openbao-global"
   refreshInterval: "1h"
   deletionPolicy: "Delete"
@@ -187,4 +187,11 @@ pushSecret:
     audit: "clickhouse/audit"
 
 externalSecret:
-  enabled: false
+  enabled: true
+  secretStoreName: "openbao-global"
+  refreshInterval: "1h"
+  deletionPolicy: "Retain"
+  paths:
+    admin: "clickhouse/admin"
+    ingestor: "clickhouse/ingestor"
+    audit: "clickhouse/audit"

@@ -25,6 +25,9 @@ TCP URL:
 Admin credentials secret:
   {{ include "clickhouse.fullname" . }}-credentials-admin
 
+Sourced from OpenBao:
+  {{ .Values.externalSecret.paths.admin }}
+
 To get admin password:
   kubectl get secret {{ include "clickhouse.fullname" . }}-credentials-admin \
     -n {{ .Release.Namespace }} \

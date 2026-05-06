@@ -44,16 +44,45 @@ spec:
               echo "  ClickHouse Schema Initialization"
               echo "============================================"
               
-              # Ждём готовности
-              echo "Waiting for ClickHouse..."
-              until ch_query -q "SELECT 1" > /dev/null 2>&1; do
-                sleep 3
-              done
-              echo "✓ ClickHouse is ready!"
-              
               # Проверяем нужна ли инициализация
-              TABLE_COUNT=$(ch_query -q "SELECT count() FROM system.tables WHERE database = '$CH_DB'" 2>/dev/null || echo "0")
               EXPECTED_TABLES=15
+              CLICKHOUSE_READY=0
+              TABLE_COUNT=""
+              if TABLE_COUNT=$(ch_query -q "SELECT count() FROM system.tables WHERE database = '$CH_DB'"); then
+                CLICKHOUSE_READY=1
+                if [ "$TABLE_COUNT" -ge "$EXPECTED_TABLES" ]; then
+                  echo "✓ Schema already initialized ($TABLE_COUNT tables found)"
+                  echo ""
+                  echo "Tables:"
+                  ch_query -q "SELECT name FROM system.tables WHERE database = '$CH_DB' ORDER BY name"
+                  exit 0
+                fi
+              else
+                TABLE_COUNT="0"
+              fi
+
+              if [ "$CLICKHOUSE_READY" -ne 1 ]; then
+                MAX_WAIT_SECONDS=300
+                WAIT_STEP_SECONDS=3
+                elapsed=0
+
+                # Ждём только если ClickHouse еще не отвечает.
+                echo "Waiting for ClickHouse..."
+                until ch_query -q "SELECT 1" >/dev/null 2> /tmp/clickhouse-wait.err; do
+                  if [ "$elapsed" -ge "$MAX_WAIT_SECONDS" ]; then
+                    echo "✗ ClickHouse did not become ready within ${MAX_WAIT_SECONDS}s"
+                    if [ -s /tmp/clickhouse-wait.err ]; then
+                      cat /tmp/clickhouse-wait.err
+                    fi
+                    exit 1
+                  fi
+                  sleep "$WAIT_STEP_SECONDS"
+                  elapsed=$((elapsed + WAIT_STEP_SECONDS))
+                done
+                echo "✓ ClickHouse is ready!"
+              fi
+              
+              TABLE_COUNT=$(ch_query -q "SELECT count() FROM system.tables WHERE database = '$CH_DB'" 2>/dev/null || echo "0")
               
               if [ "$TABLE_COUNT" -ge "$EXPECTED_TABLES" ]; then
                 echo "✓ Schema already initialized ($TABLE_COUNT tables found)"

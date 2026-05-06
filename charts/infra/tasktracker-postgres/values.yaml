@@ -19,13 +19,12 @@ postgres:
   database: tasktracker
   dataDir: /var/lib/postgresql/data/pgdata
 
-pushSecret:
+openbao:
   enabled: true
   secretStoreName: openbao-global
-  remotePath: tasktracker/postgres
-  useProperty: true
+  secretPath: tasktracker/postgres
   refreshInterval: "1h"
-  deletionPolicy: None
+  deletionPolicy: Retain
 
 resources:
   requests:
