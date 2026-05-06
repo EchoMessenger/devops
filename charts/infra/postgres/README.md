@@ -1,8 +1,14 @@
 # postgres
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 16](https://img.shields.io/badge/AppVersion-16-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 16](https://img.shields.io/badge/AppVersion-16-informational?style=flat-square)
 
 PostgreSQL for Tinode
+
+## Secret flow
+
+- When `openbao.enabled=true`, the chart reads `tinode/postgres` from OpenBao via `ExternalSecret` and does not generate a password in Helm.
+- When `openbao.enabled=false`, set `postgres.password` explicitly; the chart will not synthesize a random password.
+- If the live Postgres password and the OpenBao/Kubernetes secret diverge, update the live role password to match the chosen secret value, then resync ArgoCD.
 
 ## Values
 
@@ -13,11 +19,17 @@ PostgreSQL for Tinode
 | image.repository | string | `"postgres"` | PostgreSQL image repository |
 | image.tag | string | `"16"` | PostgreSQL image tag |
 | nameOverride | string | `""` | Override the chart name |
+| openbao.deletionPolicy | string | `"Retain"` | Deletion policy when the ExternalSecret is removed (Retain, Delete) |
+| openbao.enabled | bool | `true` | Enable OpenBao-backed ExternalSecret for postgres credentials |
+| openbao.refreshInterval | string | `"1h"` | How often to refresh the Kubernetes Secret from OpenBao |
+| openbao.secretPath | string | `"tinode/postgres"` | Remote path in the secret store (e.g., OpenBao/Vault path) |
+| openbao.secretStoreName | string | `"openbao-global"` | Name of the ClusterSecretStore to read from |
 | postgres.dataDir | string | `"/var/lib/postgresql/data/pgdata"` | Data directory path inside the container |
 | postgres.database | string | `"postgres"` | Default database name |
 | postgres.user | string | `"postgres"` | PostgreSQL superuser name |
-| pushSecret.deletionPolicy | string | `"None"` | Deletion policy when PushSecret is removed (None, Delete) |
-| pushSecret.enabled | bool | `true` | Enable PushSecret to sync credentials to external secret store |
+| postgres.password | string | `""` | Password used when OpenBao is disabled |
+| pushSecret.deletionPolicy | string | `"None"` | Deletion policy when PushSecret is removed (legacy non-OpenBao mode) |
+| pushSecret.enabled | bool | `true` | Enable PushSecret to sync credentials to external secret store in legacy non-OpenBao mode |
 | pushSecret.refreshInterval | string | `"1h"` | How often to sync secrets to the remote store |
 | pushSecret.remotePath | string | `"tinode/postgres"` | Remote path in the secret store (e.g., OpenBao/Vault path) |
 | pushSecret.secretStoreName | string | `"openbao-global"` | Name of the ClusterSecretStore to push secrets to |
