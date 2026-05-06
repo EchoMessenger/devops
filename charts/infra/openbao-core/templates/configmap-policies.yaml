@@ -87,6 +87,9 @@ data:
       capabilities = ["create", "read", "update", "delete"]
     }
     path "secret/metadata/restauth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
     # tasktracker/postgres - полный доступ
     path "secret/data/tasktracker/postgres" {
       capabilities = ["create", "read", "update", "delete"]

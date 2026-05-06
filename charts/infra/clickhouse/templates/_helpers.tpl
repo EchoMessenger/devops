@@ -64,6 +64,14 @@ ClickHouse TCP URL
 {{- end -}}
 
 {{/*
+ClickHouse native URL with credentials
+*/}}
+{{- define "clickhouse.nativeUrl" -}}
+{{- $root := .root -}}
+clickhouse://{{ .username }}:{{ .password }}@{{ include "clickhouse.fullname" $root }}.{{ $root.Release.Namespace }}.svc.cluster.local:{{ $root.Values.service.tcpPort }}/{{ $root.Values.clickhouse.defaultDatabase }}
+{{- end -}}
+
+{{/*
 ClickHouse JDBC URL
 */}}
 {{- define "clickhouse.jdbcUrl" -}}
