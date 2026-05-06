@@ -54,7 +54,7 @@ openbao:
   serviceAccount: "tasktracker-sa"
   secretsPath: "kafka"
   databaseSecretsPath: "tasktracker/postgres"
-  registrySecretsPath: "registry/tasktracker/ghcr"
+  registrySecretsPath: "registry/ghcr"
   keycloakSecretsPath: "tasktracker/keycloak"
   resyncInterval: "10s"
 
