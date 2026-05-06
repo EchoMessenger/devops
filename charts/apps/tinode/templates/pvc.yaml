@@ -15,17 +15,4 @@ spec:
     requests:
       storage: {{ .Values.persistence.size }}
 
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: tinode-logs
-  namespace: tinode
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-
 {{- end }}
