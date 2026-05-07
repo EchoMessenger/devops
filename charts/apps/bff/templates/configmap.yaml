@@ -8,6 +8,8 @@ data:
   BFF_PORT: {{ .Values.env.BFF_PORT | quote }}
   LOG_LEVEL: {{ .Values.env.LOG_LEVEL | quote }}
   RATE_LIMIT_PER_MINUTE: {{ .Values.env.RATE_LIMIT_PER_MINUTE | quote }}
+  CORS_ALLOWED_ORIGINS: {{ .Values.env.CORS_ALLOWED_ORIGINS | quote }}
+  CORS_ALLOW_CREDENTIALS: {{ .Values.env.CORS_ALLOW_CREDENTIALS | quote }}
   AUDIT_SERVICE_URL: {{ .Values.env.AUDIT_SERVICE_URL | quote }}
   TASKTRACKER_SERVICE_URL: {{ .Values.env.TASKTRACKER_SERVICE_URL | quote }}
   AUDIT_SERVICE_HEALTH_PORT: {{ .Values.env.AUDIT_SERVICE_HEALTH_PORT | quote }}

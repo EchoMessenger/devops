@@ -82,6 +82,8 @@ Key configuration values (see `values.yaml` for all options):
 BFF_PORT: "7000"              # Server port
 LOG_LEVEL: "info"             # Log level (debug, info, warn, error)
 RATE_LIMIT_PER_MINUTE: "100"  # Requests per minute per IP
+CORS_ALLOWED_ORIGINS: "http://192.168.56.1:8080" # Comma-separated browser origin allowlist
+CORS_ALLOW_CREDENTIALS: "false" # Set true only when frontend uses credentialed CORS
 ```
 
 #### Sensitive (ExternalSecrets)
@@ -124,6 +126,7 @@ helm install bff ./devops/charts/apps/bff/ \
   --set replicaCount=3 \
   --set image.tag=v1.2.3 \
   --set externalSecrets.enabled=false \
+  --set env.CORS_ALLOWED_ORIGINS="https://app.echo-messenger.ru,http://192.168.56.1:8080" \
   --set ingress.hosts[0].host=my-bff.example.com
 ```
 
