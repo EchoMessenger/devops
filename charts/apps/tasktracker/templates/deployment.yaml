@@ -61,18 +61,6 @@ spec:
                   name: {{ include "tasktracker.fullname" . }}-keycloak
                   key: clientSecret
             {{- end }}
-
-            # Kafka SASL configuration
-#            {{- if .Values.openbao.enabled }}
-#            - name: KAFKA_SASL_PASSWORD
-#              valueFrom:
-#                secretKeyRef:
-#                  name: {{ include "tasktracker.fullname" . }}-kafka-user
-#                  key: password
-#              optional: true
-#            {{- end }}
-
-          # Health checks
           livenessProbe:
             httpGet:
               path: {{ .Values.healthChecks.liveness.path | default "/health" }}
