@@ -21,18 +21,6 @@ keycloak:
 #  realm: "echo"
   clientId: "auth"
 
-#kafka:
-#  brokers: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
-#  topic: "tinode.account-events"
-#  groupId: "fastapi-user-sync-consumer"
-#  clientId: "tasktracker"
-#  sasl:
-#    enabled: true
-#    mechanism: SCRAM-SHA-512
-#    username: "user"
-#  tls:
-#    enabled: false
-#    insecureSkipVerify: false
 
 log:
   level: "info"
