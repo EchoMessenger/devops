@@ -39,6 +39,7 @@ healthChecks:
     periodSeconds: 5
 
 openbao:
+  clusterSecretStore: openbao-global
   enabled: true
   path: "secret"
   role: "tasktracker"
