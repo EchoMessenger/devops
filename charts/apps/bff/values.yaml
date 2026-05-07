@@ -74,7 +74,7 @@ env:
   RATE_LIMIT_PER_MINUTE: "100"
   # Browser CORS configuration for /bff/v1/*
   # Comma-separated allowlist; override per environment for prod/stage/local dev
-  CORS_ALLOWED_ORIGINS: "http://192.168.56.1:8080"
+  CORS_ALLOWED_ORIGINS: "http://localhost:8080,http://127.0.0.1:8080,http://192.168.56.1:8080"
   CORS_ALLOW_CREDENTIALS: "false"
   # Backend service URLs (can be overridden per environment)
   AUDIT_SERVICE_URL: "http://audit-audit-service.audit.svc.cluster.local:8080"
