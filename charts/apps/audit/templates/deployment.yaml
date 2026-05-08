@@ -84,11 +84,41 @@ spec:
                 configMapKeyRef:
                   name: {{ include "audit-service.fullname" . }}-config
                   key: AUDIT_INCIDENTS_DETECTION_INTERVAL_SECONDS
+            - name: AUDIT_INCIDENTS_BRUTE_FORCE_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_BRUTE_FORCE_THRESHOLD
+            - name: AUDIT_INCIDENTS_MASS_DELETE_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_MASS_DELETE_THRESHOLD
+            - name: AUDIT_INCIDENTS_VOLUME_ANOMALY_MULTIPLIER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_VOLUME_ANOMALY_MULTIPLIER
+            - name: AUDIT_INCIDENTS_VOLUME_ANOMALY_MIN_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_VOLUME_ANOMALY_MIN_THRESHOLD
+            - name: AUDIT_INCIDENTS_TOPIC_ENUMERATION_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_TOPIC_ENUMERATION_THRESHOLD
             - name: AUDIT_INCIDENTS_TOPIC_ENUMERATION_GRACE_SECONDS
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "audit-service.fullname" . }}-config
                   key: AUDIT_INCIDENTS_TOPIC_ENUMERATION_GRACE_SECONDS
+            - name: AUDIT_INCIDENTS_OFF_HOURS_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_OFF_HOURS_THRESHOLD
             - name: EXPORT_STORAGE_TYPE
               valueFrom:
                 configMapKeyRef:
