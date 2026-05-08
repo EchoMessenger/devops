@@ -79,6 +79,11 @@ spec:
                 configMapKeyRef:
                   name: {{ include "audit-service.fullname" . }}-config
                   key: LOG_LEVEL
+            - name: AUDIT_INCIDENTS_DETECTION_INTERVAL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "audit-service.fullname" . }}-config
+                  key: AUDIT_INCIDENTS_DETECTION_INTERVAL_SECONDS
             - name: EXPORT_STORAGE_TYPE
               valueFrom:
                 configMapKeyRef:
