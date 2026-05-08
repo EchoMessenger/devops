@@ -48,7 +48,7 @@ data:
         # --- BFF API ---
         set $bff_backend "http://{{ .Values.bff.host }}:{{ .Values.bff.port }}";
 
-        location /api/ {
+        location /bff/ {
             proxy_pass $bff_backend;
             proxy_http_version 1.1;
 

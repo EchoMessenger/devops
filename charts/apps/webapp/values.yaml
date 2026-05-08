@@ -26,6 +26,15 @@ keycloak:
   clientId: "webapp"
   scope: "openid profile email"
 
+bff:
+  enabled: true
+  host: "bff.bff.svc.cluster.local"
+  port: 7000
+
+runtimeConfig:
+  bffBaseUrl: ""
+  taskTrackerHealthPath: "/bff/v1/tasktracker/health"
+
 service:
   type: ClusterIP
   port: 80
