@@ -30,38 +30,37 @@ spec:
 #                echo "Waiting for PostgreSQL..."
 #                sleep 2
 #              done
-        initContainers:
-          - name: sync-db-password
-            image: postgres:16
-            env:
-              - name: NEW_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    name: { { include "tasktracker.fullname" . } }-database
-                    key: password
-            command:
-              - sh
-              - -c
-              - |
-                set -e
+        - name: sync-db-password
+          image: postgres:16
+          env:
+            - name: NEW_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: { { include "tasktracker.fullname" . } }-database
+                  key: password
+          command:
+            - sh
+            - -c
+            - |
+              set -e
 
-                echo "Waiting for PostgreSQL..."
+              echo "Waiting for PostgreSQL..."
 
-                until pg_isready -h {{ .Values.database.host }} \
-                                 -p {{ .Values.database.port }} \
-                                 -U {{ .Values.database.username }}; do
-                  sleep 2
-                done
+              until pg_isready -h {{ .Values.database.host }} \
+                               -p {{ .Values.database.port }} \
+                               -U {{ .Values.database.username }}; do
+                sleep 2
+              done
 
-                echo "Altering password using trust authentication..."
+              echo "Altering password using trust authentication..."
 
-                psql -h {{ .Values.database.host }} \
-                     -p {{ .Values.database.port }} \
-                     -U {{ .Values.database.username }} \
-                     -d {{ .Values.database.name }} \
-                     -c "ALTER USER {{ .Values.database.username }} WITH PASSWORD '$NEW_PASSWORD';"
+              psql -h {{ .Values.database.host }} \
+                   -p {{ .Values.database.port }} \
+                   -U {{ .Values.database.username }} \
+                   -d {{ .Values.database.name }} \
+                   -c "ALTER USER {{ .Values.database.username }} WITH PASSWORD '$NEW_PASSWORD';"
 
-                echo "Password synchronized successfully."
+              echo "Password synchronized successfully."
 
       containers:
         - name: {{ .Chart.Name }}
