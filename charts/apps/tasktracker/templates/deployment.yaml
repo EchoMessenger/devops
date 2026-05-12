@@ -26,7 +26,7 @@ spec:
             - name: NEW_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: { { include "tasktracker.fullname" . } }-database
+                  name: {{ include "tasktracker.fullname" . }}-database
                   key: password
           command:
             - sh
