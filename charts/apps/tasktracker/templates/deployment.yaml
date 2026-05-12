@@ -30,6 +30,31 @@ spec:
                 echo "Waiting for PostgreSQL..."
                 sleep 2
               done
+        - name: sync-db-password
+          image: postgres:16
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tasktracker.fullname" . }}-database
+                  key: password
+          command:
+            - sh
+            - -c
+            - |
+              echo "Syncing DB password..."
+              until pg_isready -h {{ .Values.database.host }} -p {{ .Values.database.port }} -U {{ .Values.database.username }}; do
+                echo "Waiting for DB to accept connections..."
+                sleep 2
+              done
+      
+              psql -h {{ .Values.database.host }} \
+                   -p {{ .Values.database.port }} \
+                   -U {{ .Values.database.username }} \
+                   -d {{ .Values.database.name }} \
+                   -c "ALTER USER {{ .Values.database.username }} WITH PASSWORD '$PGPASSWORD';"
+      
+              echo "Password synced successfully"
 
       containers:
         - name: {{ .Chart.Name }}
