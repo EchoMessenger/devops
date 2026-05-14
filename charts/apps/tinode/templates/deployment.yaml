@@ -15,8 +15,8 @@ spec:
     type: {{ .Values.deploymentStrategy.type | quote }}
     {{- if eq .Values.deploymentStrategy.type "RollingUpdate" }}
     rollingUpdate:
-      maxUnavailable: {{ .Values.deploymentStrategy.rollingUpdate.maxUnavailable | quote }}
-      maxSurge: {{ .Values.deploymentStrategy.rollingUpdate.maxSurge | quote }}
+      maxUnavailable: {{ .Values.deploymentStrategy.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.deploymentStrategy.rollingUpdate.maxSurge }}
     {{- end }}
   selector:
     matchLabels:
