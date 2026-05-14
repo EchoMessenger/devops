@@ -1,3 +1,8 @@
+{{- $iceServersSecretName := .Values.webrtc.iceServersSecret.name -}}
+{{- if and .Values.webrtc.iceServersSecret.create (not $iceServersSecretName) -}}
+{{- $iceServersSecretName = printf "%s-webrtc" (include "tinode.fullname" .) -}}
+{{- end -}}
+{{- $mountIceServers := and .Values.webrtc.enabled .Values.webrtc.iceServersFile $iceServersSecretName -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +11,13 @@ metadata:
     {{- include "tinode.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: {{ .Values.deploymentStrategy.type | quote }}
+    {{- if eq .Values.deploymentStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.deploymentStrategy.rollingUpdate.maxUnavailable | quote }}
+      maxSurge: {{ .Values.deploymentStrategy.rollingUpdate.maxSurge | quote }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "tinode.selectorLabels" . | nindent 6 }}
@@ -13,6 +25,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if .Values.webrtc.iceServersSecret.create }}
+        checksum/webrtc: {{ include (print $.Template.BasePath "/webrtc-secret.yaml") . | sha256sum }}
+        {{- end }}
       labels:
         {{- include "tinode.selectorLabels" . | nindent 8 }}
     spec:
@@ -365,6 +380,11 @@ spec:
           mountPath: /opt/tinode
         - name: botdata
           mountPath: /botdata
+        {{- if $mountIceServers }}
+        - name: ice-servers
+          mountPath: {{ dir .Values.webrtc.iceServersFile }}
+          readOnly: true
+        {{- end }}
 
       # Hardening: initContainer копирует бинарники в emptyDir
       initContainers:
@@ -411,6 +431,14 @@ spec:
         emptyDir:
           medium: Memory
           sizeLimit: 1Mi
+      {{- if $mountIceServers }}
+      - name: ice-servers
+        secret:
+          secretName: {{ $iceServersSecretName | quote }}
+          items:
+            - key: {{ .Values.webrtc.iceServersSecret.key | quote }}
+              path: {{ base .Values.webrtc.iceServersFile | quote }}
+      {{- end }}
       
       {{- with .Values.nodeSelector }}
       nodeSelector:

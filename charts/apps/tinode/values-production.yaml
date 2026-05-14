@@ -120,6 +120,10 @@ ingress:
 webrtc:
   enabled: true
   iceServersFile: "/etc/tinode/ice-servers.json"
+  iceServersSecret:
+    create: false
+    name: "tinode-ice-servers"
+    key: "ice-servers.json"
 
 # Очистка незавершенных регистраций
 accountGc:

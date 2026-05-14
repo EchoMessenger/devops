@@ -33,9 +33,21 @@ openbao:
       path: tinode/postgres
     keygen:
       path: tinode/keygen
+    smtp:
+      path: tinode/smtp
+    s3:
+      path: tinode/s3
+    tnpg:
+      path: tinode/tnpg
 
 # Количество реплик
 replicaCount: 1
+
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
 
 # Тип сервиса и порты
 service:
@@ -160,8 +172,16 @@ tls:
 
 # WebRTC
 webrtc:
-  enabled: false
-  iceServersFile: ""
+  enabled: true
+  iceServersFile: "/etc/tinode/ice-servers.json"
+  iceServersSecret:
+    # If true, chart creates a Secret from iceServers below. For production,
+    # prefer create=false and provide the Secret out-of-band to keep TURN
+    # credentials out of values files.
+    create: false
+    name: "tinode-ice-servers"
+    key: "ice-servers.json"
+    iceServers: []
 
 # Garbage collection для незавершенных регистраций
 accountGc:

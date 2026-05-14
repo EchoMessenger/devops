@@ -243,6 +243,52 @@ fcm:
   vapidKey: "YOUR_VAPID_KEY"
 ```
 
+### WebRTC звонки
+
+Tinode включает звонки только если `WEBRTC_ENABLED=true` и файл `iceServersFile`
+содержит непустой JSON-массив ICE-серверов. TURN credential не храните в git:
+создайте Kubernetes Secret отдельно.
+
+```bash
+cat > /tmp/ice-servers.json <<'EOF'
+[
+  {
+    "urls": ["stun:158.160.78.105:3478"]
+  },
+  {
+    "urls": [
+      "turn:158.160.78.105:3478?transport=udp",
+      "turn:158.160.78.105:3478?transport=tcp"
+    ],
+    "username": "tinode",
+    "credential": "CHANGE_ME_TO_TURN_PASSWORD"
+  }
+]
+EOF
+
+kubectl -n tinode create secret generic tinode-ice-servers \
+  --from-file=ice-servers.json=/tmp/ice-servers.json \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Production values already reference this Secret:
+
+```yaml
+webrtc:
+  enabled: true
+  iceServersFile: "/etc/tinode/ice-servers.json"
+  iceServersSecret:
+    create: false
+    name: "tinode-ice-servers"
+    key: "ice-servers.json"
+```
+
+After redeploying Tinode, check logs:
+
+```bash
+kubectl -n tinode logs deploy/tinode | grep -E "Video calls|ICE"
+```
+
 ### Ingress с SSL
 
 ```yaml
