@@ -25,6 +25,7 @@ ingress:
   ingressClassName: traefik
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.middlewares: "sonar-redirect-https@kubernetescrd"
   tls:
     - hosts:
         - sonar.echo-messenger.ru
@@ -84,3 +85,10 @@ startupProbe:
   periodSeconds: 10
   failureThreshold: 24
   timeoutSeconds: 2
+
+jdbcOverwrite:
+  enable: true
+  jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarqube"
+  jdbcUsername: "sonar"
+  jdbcSecretName: "sonarqube-postgres-secret"
+  jdbcSecretPasswordKey: "password"
