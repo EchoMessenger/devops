@@ -42,3 +42,6 @@ initSysctl:
   enabled: true   # попытается выставить vm.max_map_count, но в k3s лучше делать вручную
 
 jvmOpts: "-Xmx1024m -Xms512m"
+
+monitoringPasscodeSecretName: "sonarqube-monitoring-secret"
+monitoringPasscodeSecretKey: "MONITORING_PASSCODE"
