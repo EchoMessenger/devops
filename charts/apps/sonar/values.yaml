@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  tag: "lts-community"
+  tag: "latest"
 
 postgresql:
   enabled: true
