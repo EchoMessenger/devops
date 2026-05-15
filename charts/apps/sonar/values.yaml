@@ -1,0 +1,44 @@
+replicaCount: 1
+
+image:
+  tag: "lts-community"
+
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: "sonarqube-postgres-secret"
+    database: "sonarqube"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+ingress:
+  enabled: true
+  hosts:
+    - name: sonar.echo-messenger.ru
+      path: /
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  tls:
+    - hosts:
+        - sonar.echo-messenger.ru
+      secretName: sonar-tls
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "2Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+
+# Важно для Elasticsearch внутри SonarQube
+initSysctl:
+  enabled: true   # попытается выставить vm.max_map_count, но в k3s лучше делать вручную
+
+jvmOpts: "-Xmx1024m -Xms512m"
