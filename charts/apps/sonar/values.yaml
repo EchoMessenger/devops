@@ -85,10 +85,3 @@ startupProbe:
   periodSeconds: 10
   failureThreshold: 24
   timeoutSeconds: 2
-
-jdbcOverwrite:
-  enable: true
-  jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarqube"
-  jdbcUsername: "sonar"
-  jdbcSecretName: "sonarqube-postgres-secret"
-  jdbcSecretPasswordKey: "password"
