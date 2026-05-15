@@ -22,8 +22,9 @@ ingress:
   hosts:
     - name: sonar.echo-messenger.ru
       path: /
+  ingressClassName: traefik
   annotations:
-    kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   tls:
     - hosts:
         - sonar.echo-messenger.ru
