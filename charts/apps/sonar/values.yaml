@@ -45,3 +45,6 @@ jvmOpts: "-Xmx1024m -Xms512m"
 
 monitoringPasscodeSecretName: "sonarqube-monitoring-secret"
 monitoringPasscodeSecretKey: "MONITORING_PASSCODE"
+
+community:
+  enabled: true
