@@ -6,6 +6,3 @@ kafka:
     requests:
       cpu: "500m"
       memory: "1536Mi"
-
-storage:
-  size: 16Gi
