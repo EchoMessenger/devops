@@ -1,0 +1,10 @@
+apiVersion: v2
+name: sonar
+description: SonarQube with an in-cluster PostgreSQL database
+type: application
+version: 0.1.0
+appVersion: "2026.2.1"
+dependencies:
+  - name: sonarqube
+    version: "2026.2.1"
+    repository: "https://SonarSource.github.io/helm-chart-sonarqube"
