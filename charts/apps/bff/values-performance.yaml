@@ -1,0 +1,11 @@
+# Performance-test override for public BFF read/proxy path.
+# Replicas, HPA replica ranges, and limits intentionally stay inherited from values.yaml.
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+env:
+  RATE_LIMIT_PER_MINUTE: "10000"
+  LOG_LEVEL: "info"

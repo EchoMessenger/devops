@@ -1,0 +1,11 @@
+# Performance-test override for audit read/detection path.
+# Replicas, HPA replica ranges, and limits intentionally stay inherited from values.yaml.
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 384Mi
+
+env:
+  LOG_LEVEL: "info"
+  CLICKHOUSE_POOL_SIZE: "12"

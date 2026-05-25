@@ -1,0 +1,14 @@
+# Performance-test override for Kafka -> ClickHouse ingestion measurements.
+# Replicas and limits intentionally stay inherited from values.yaml.
+
+batch:
+  size: "1000"
+  # Lower timeout improves audit delivery latency while preserving batched inserts.
+  timeout: "1s"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+logLevel: "info"

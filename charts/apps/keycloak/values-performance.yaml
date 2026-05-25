@@ -1,0 +1,15 @@
+# Performance-test override for auth warm-up. The active publish phase should
+# reuse cached tokens and avoid turning Keycloak into the measured bottleneck.
+# Replicas and limits intentionally stay inherited from values.yaml.
+
+keycloak:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 768Mi
+
+postgresql:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi

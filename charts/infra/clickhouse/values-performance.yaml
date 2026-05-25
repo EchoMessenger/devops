@@ -1,0 +1,22 @@
+# Performance-test override for single-node ClickHouse audit storage.
+# Replicas and limits intentionally stay inherited from values.yaml.
+
+resources:
+  requests:
+    cpu: 1000m
+    memory: 3Gi
+
+clickhouse:
+  config:
+    max_connections: 4096
+    max_concurrent_queries: 100
+  profiles:
+    audit:
+      readonly: 0
+      max_memory_usage: 6000000000
+      max_execution_time: 60
+    ingestor:
+      readonly: 0
+      max_memory_usage: 3000000000
+      max_execution_time: 30
+      max_insert_block_size: 1048576

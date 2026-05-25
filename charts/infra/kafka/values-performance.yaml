@@ -1,0 +1,11 @@
+# Performance-test override for single-broker Kafka in the production-like stand.
+# Replicas and limits intentionally stay inherited from values.yaml.
+
+kafka:
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1536Mi"
+
+storage:
+  size: 16Gi
