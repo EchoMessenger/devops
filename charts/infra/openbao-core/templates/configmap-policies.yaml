@@ -106,6 +106,14 @@ data:
       capabilities = ["create", "read", "update", "delete", "list"]
     }
 
+    # sonar/postgres, sonar/monitoring - полный доступ
+    path "secret/data/sonar/*" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+    path "secret/metadata/sonar/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
     # registry/tasktracker/ghcr - полный доступ
     path "secret/data/registry/tasktracker/ghcr" {
       capabilities = ["create", "read", "update", "delete"]
