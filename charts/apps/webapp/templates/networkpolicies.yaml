@@ -41,6 +41,13 @@ spec:
       ports:
         - port: 6060
         - port: 16060
+    # К BFF API для same-origin /bff прокси в nginx
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bff
+      ports:
+        - port: 7000
     # DNS
     - to:
         - namespaceSelector:
