@@ -15,7 +15,6 @@ spec:
       releaseName: ingestor
       valueFiles:
         - values.yaml
-        - values-performance.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: ingestor
